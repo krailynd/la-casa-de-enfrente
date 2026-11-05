@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -60,6 +61,20 @@ fun SettingsScreen(settings: Settings, evening: Evening, acts: Acts) {
         Row(Modifier.padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("←", style = T.Title, modifier = Modifier.clip(Sh.Sm).clickable { acts.open(null) }.padding(horizontal = 10.dp, vertical = 4.dp))
             Text(t("Настройки", "Settings"), style = T.Name)
+        }
+        Eyebrow(t("Язык", "Language"), Modifier.padding(start = 18.dp, top = 4.dp))
+        val lang = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags().substringBefore(',').substringBefore('-')
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+            for ((i, pair) in listOf("" to t("Системный", "System"), "ru" to "Русский", "en" to "English").withIndex()) {
+                val (tag, label) = pair
+                if (i > 0) Spacer(Modifier.width(8.dp))
+                val pick = {
+                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                        if (tag.isEmpty()) androidx.core.os.LocaleListCompat.getEmptyLocaleList() else androidx.core.os.LocaleListCompat.forLanguageTags(tag),
+                    )
+                }
+                LangChip(label, lang == tag, Modifier.weight(1f), pick)
+            }
         }
         Item(t("Подарки за окнами", "Presents behind the windows"), t("Для себя или для близкого, как в обычном адвент-календаре", "For you or someone dear, as in an ordinary advent calendar")) { acts.open(Overlay.Gifts) }
         Item(
@@ -120,4 +135,13 @@ private fun Item(title: String, sub: String?, onClick: () -> Unit) {
         Text(title, style = T.Body)
         if (sub != null) Text(sub, style = T.Muted)
     }
+}
+
+@Composable
+private fun LangChip(label: String, on: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier.clip(Sh.Sm).then(if (on) Modifier.background(C.warm) else Modifier.border(1.dp, C.line, Sh.Sm))
+            .clickable(onClick = onClick).padding(horizontal = 6.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) { Text(label, style = T.Button, color = if (on) C.onWarm else C.ink, maxLines = 1, softWrap = false) }
 }

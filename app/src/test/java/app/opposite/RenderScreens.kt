@@ -75,6 +75,7 @@ abstract class ScreensBase {
     @Test fun dossier() = screen("5-dossier", Tab.NOTES, sheet = Sheet.Dossier("vera"))
     @Test fun tree() { TreeBitmap.get(); screen("6-tree", Tab.TREE) }
     @Test fun gifts() = screen("7-gifts", overlay = Overlay.Gifts)
+    @Test fun settingsScreen() = screen("10-settings", overlay = Overlay.Settings)
     @Test fun giftRoom() = screen("8-gift-room", overlay = Overlay.Room(3))
     @Test fun finale() = screen("9-finale", overlay = Overlay.Finale) { it.copy(season = it.season!!.copy(solved = 1L, lit = (1..24).associateWith { 1L })) }
 }
