@@ -63,6 +63,7 @@ android {
     }
     androidResources {
         generateLocaleConfig = true
+        noCompress += listOf("mp3", "ogg")
     }
     testOptions {
         unitTests.isIncludeAndroidResources = true

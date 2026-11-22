@@ -124,6 +124,8 @@ fun HouseScreen(evening: Evening, settings: Settings, acts: Acts, igniting: Int,
     Column(Modifier.verticalScroll(rememberScrollState())) {
         Header(evening, settings, acts)
 
+        AppUpdateBanner()
+
         Box {
             Picture(
                 HOUSE_W,

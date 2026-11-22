@@ -145,6 +145,7 @@ fun Root(settings: Settings, fixedNow: Long? = null, startTab: Tab = Tab.HOUSE, 
     Box(Modifier.fillMaxSize().background(C.bg)) {
         LaunchedEffect(Unit) {
             app.opposite.sync.GitHubSyncRepository.initialize(context)
+            app.opposite.sync.AppUpdateChecker.initialize(context)
         }
 
         Column(Modifier.fillMaxSize()) {

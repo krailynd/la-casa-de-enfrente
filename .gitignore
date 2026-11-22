@@ -14,3 +14,6 @@
 /design
 /dist
 __pycache__/
+kls_database.db
+/musicas/
+mise.toml

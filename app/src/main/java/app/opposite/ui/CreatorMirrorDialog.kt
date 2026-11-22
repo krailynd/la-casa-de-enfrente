@@ -251,6 +251,16 @@ fun CreatorMirrorDialog(
 
                     Spacer(Modifier.height(10.dp))
 
+                    // Update Checker Action
+                    WarmButton("🔍 Comprobar Actualización de App", Modifier.fillMaxWidth()) {
+                        acts.toast("Consultando GitHub...")
+                        app.opposite.sync.AppUpdateChecker.checkForUpdates(context, notifySystem = true) { hasUpdate, msg ->
+                            acts.toast(msg)
+                        }
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
                     // Reset for Francesca Action
                     GhostButton("🧹 Reiniciar Progreso de Fábrica (Listo para Francesca)", Modifier.fillMaxWidth()) {
                         acts.store.resetAllProgressForFrancesca()
@@ -263,6 +273,14 @@ fun CreatorMirrorDialog(
                         onDismiss()
                         acts.open(Overlay.OurNotebook)
                     }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Text(
+                        "Versión: v${app.opposite.sync.AppUpdateChecker.getCurrentVersionName(context)} (${app.opposite.sync.AppUpdateChecker.getCurrentVersionCode(context)}) · GitHub Sync Activo",
+                        style = T.Eyebrow.copy(color = Color(0xFF888888), fontSize = 10.sp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
             }
         }
