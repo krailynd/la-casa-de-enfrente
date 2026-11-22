@@ -3,14 +3,20 @@ package app.opposite.domain
 import kotlin.random.Random
 
 /**
- * Who leaves the presents under the doors? Ten neighbours could be the Secret Grandfather; each season
- * one of them is. Every suspect has six habits (handwriting, wrapping, footprints, hour, gait, smell).
- * Each lit window gives one clue about the real one — mostly a vague yes/no about a habit — and a
- * «director» picks how sharp each clue is so the answer narrows slowly: four suspects left till about
- * the 10th, two by the 18th, one only on the 21st–23rd.
+ * El misterio del Admirador Secreto de Principessa.
+ * Diez vecinos del edificio son sospechosos; el verdadero admirador es «El Músico de Medianoche» (Elvis).
+ * Cada sospechoso tiene seis hábitos verificables (letra, envoltorio, pisadas, hora, paso, aroma).
+ * Las 23 pistas descubiertas en las ventanas descartan progresivamente al resto hasta dejar únicamente a Elvis el día 24.
  */
 object Mystery {
-    enum class Attr(val ru: String, val en: String) { HAND("почерк", "handwriting"), WRAP("упаковка", "wrapping"), STEPS("следы", "footprints"), TIME("время", "hour"), GAIT("походка", "gait"), SMELL("запах", "smell") }
+    enum class Attr(val ru: String, val en: String) {
+        HAND("letra", "letra"),
+        WRAP("envoltorio", "envoltorio"),
+        STEPS("pisadas", "pisadas"),
+        TIME("hora", "hora"),
+        GAIT("paso", "paso"),
+        SMELL("aroma", "aroma"),
+    }
 
     class Suspect(
         val id: String,
@@ -29,312 +35,296 @@ object Mystery {
         mapOf(Attr.HAND to hand, Attr.WRAP to wrap, Attr.STEPS to steps, Attr.TIME to time, Attr.GAIT to gait, Attr.SMELL to smell)
 
     val suspects = listOf(
-        Suspect("petr", 22, t("Пётр Ильич", "Pyotr Ilyich"), t("почтальон на пенсии", "retired postman"), a("slant", "string", "valenki", "night", "limp", "wax"),
-            t("Тридцать лет носил почту по этому кварталу.", "Delivered the post on this block for thirty years."), null,
-            t("Тридцать лет он носил письма этому дому и знает каждого по имени и по почерку. На пенсии писем не стало, и он начал носить их сам. Посылки вязал бечёвкой, как привык на почте, и выходил к трём ночи, когда больная нога всё равно не даёт спать.",
-                "For thirty years he carried this building's letters and knows everyone by name and by handwriting. When he retired the letters stopped, so he started delivering his own. He tied the parcels with string the post-office way, and went out at three in the morning, when his bad leg wouldn't let him sleep anyway."),
-            t("«Спасибо, что смотрели на наши окна. Ваш П. И.»", "“Thank you for watching our windows. Yours, P. I.”")),
-        Suspect("vera", 6, t("Вера Павловна", "Vera Pavlovna"), t("учительница", "teacher"), a("round", "paper", "heels", "evening", "slow", "chalk"),
-            t("Сорок лет преподаёт литературу.", "Has taught literature for forty years."),
-            t("«Вера Павловна? Да она с давлением лежит, на лестницу не выходит. Я ей сам хлеб ношу».", "“Vera Pavlovna? She's in bed with her blood pressure, doesn't go near the stairs. I take her bread myself.”"),
-            t("Сорок лет Вера Павловна ставила оценки. В этом году ей захотелось ставить только пятёрки, всем и сразу. Подарки она заворачивала в тетрадные листы, а спускалась поздно вечером, когда последнее сочинение было проверено.",
-                "For forty years Vera Pavlovna handed out marks. This year she wanted to give only top marks, to everyone at once. She wrapped the presents in exercise-book pages and came down late in the evening, once the last essay was marked."),
-            t("«Всем отлично. В. П.»", "“Excellent, all of you. V. P.”")),
-        Suspect("gosha", 2, t("Гоша", "Gosha"), t("9 лет", "aged 9"), a("print", "newspaper", "kidboots", "early", "skip", "tangerine"),
-            t("Строит ракету из коробок. Знает всех во дворе.", "Building a rocket from boxes. Knows everyone in the yard."),
-            t("«Гоша? У него ключей нет, мать запирает. Да и откуда у мальчишки деньги на мёд?»", "“Gosha? He hasn't got keys, his mum locks him in. And where would a boy get money for honey?”"),
-            t("Гоша копил на телескоп с сентября. А потом решил, что телескоп подождёт: в доме всем грустно, а он знает, кто где живёт, лучше любого почтальона. Подарки заворачивал в мамины газеты и разносил сразу после уроков, вприпрыжку. Себе он тоже подарил варежки, для конспирации.",
-                "Gosha had been saving for a telescope since September. Then he decided the telescope could wait: everyone in the building was sad, and he knows who lives where better than any postman. He wrapped the presents in his mum's newspapers and delivered them straight after school, skipping. He gave himself mittens too, as cover."),
-            t("«ГОША-1 выходит на связь. Г.»", "“GOSHA-1 calling. G.”")),
-        Suspect("rustam", 7, t("Рустам", "Rustam"), t("дворник", "caretaker"), a("print", "newspaper", "valenki", "dawn", "quick", "tar"),
-            t("Двадцать лет метёт этот двор и чинит детям санки.", "Has swept this yard for twenty years and mends the children's sledges."),
-            t("«Рустам по ночам спит как убитый, весь подъезд слышит храп через стену».", "“Rustam sleeps like a log at night, the whole stairwell hears him snoring through the wall.”"),
-            t("Рустам видит дом раньше всех: в шесть утра, с метлой. Он знает, у кого сломались санки, кто давно не получал писем и кто плакал на лавочке. Подарки он оставлял, пока подметал лестницу, и заворачивал в газеты из макулатуры.",
-                "Rustam sees the building before anyone else: at six in the morning, broom in hand. He knows whose sledge broke, who hasn't had a letter in ages and who cried on the bench. He left the presents while he swept the stairs, wrapped in newspapers from the recycling."),
-            t("«С наступающим. Ваш дворник»", "“Happy holidays. Your caretaker”")),
-        Suspect("sonya", 4, t("Соня", "Sonya"), t("студентка", "student"), a("quick", "paper", "sneakers", "night", "quick", "coffee"),
-            t("Пятый курс, сессия, сопромат.", "Final year, exams, structural mechanics."),
-            t("«Соня? У неё стипендия три тысячи, она на проездной еле наскребает».", "“Sonya? Her grant is three thousand roubles, she can barely afford her bus pass.”"),
-            t("Соня не спала из-за сессии, и в три часа ночи, между билетами, ей становилось одиноко. Тогда она бегом спускалась по лестнице с маленькими свёртками в тетрадных листах. «Так хотя бы кто-то утром улыбнётся».",
-                "Sonya couldn't sleep for exams, and at three in the morning, between revision questions, she got lonely. So she ran down the stairs with little parcels wrapped in exercise-book pages. “At least someone will smile in the morning.”"),
-            t("«Сдам и вернусь с новыми. С.»", "“Back with more after the exams. S.”")),
-        Suspect("lev", 9, t("Лев Маркович", "Lev Markovich"), t("пианист", "pianist"), a("curly", "notes", "shoes", "evening", "hum", "rosin"),
-            t("Когда-то играл Шопена в Ленинграде. Теперь аккомпанирует на утренниках.", "Once played Chopin in Leningrad. Now accompanies children's parties."),
-            t("«Лев Маркович неделю назад раздавил очки, а без них дальше двери не видит».", "“Lev Markovich sat on his glasses a week ago, and without them he can't see past his own door.”"),
-            t("Лев Маркович сорок лет давал концерты, а теперь его никто не зовёт. Тогда он придумал концерт без сцены: каждый вечер после репетиции поднимался по лестнице, напевал и оставлял у дверей что-нибудь в нотной бумаге.",
-                "Lev Markovich gave concerts for forty years, and now nobody asks him. So he invented a concert without a stage: every evening after rehearsal he climbed the stairs, humming, and left something wrapped in manuscript paper at each door."),
-            t("«Фортиссимо! Л. М.»", "“Fortissimo! L. M.”")),
-        Suspect("zoya", 10, t("Зоя", "Zoya"), t("медсестра", "nurse"), a("quick", "bandage", "sneakers", "dawn", "quick", "iodine"),
-            t("Работает в ночную смену в районной больнице.", "Works night shifts at the district hospital."),
-            t("«Зоя после ночной смены приходит и падает. Я её видел: на ногах не стоит».", "“Zoya comes home from her night shift and drops. I've seen her: she can barely stand.”"),
-            t("На работе Зоя видит много грустного. Возвращаясь со смены в шесть утра, она решила, что хотя бы в её доме всё будет хорошо. Ленточек под рукой не было, поэтому подарки она перевязывала бинтом.",
-                "Zoya sees a lot of sadness at work. Coming home from her shift at six in the morning, she decided that in her own building, at least, things would be good. She had no ribbon to hand, so she tied the presents with bandage."),
-            t("«Будьте здоровы. З.»", "“Stay well. Z.”")),
-        Suspect("olga", 14, t("Ольга", "Olga"), t("швея", "seamstress"), a("round", "fabric", "heels", "evening", "hum", "oil"),
-            t("Шьёт костюмы снежинок для всего детского сада.", "Sews snowflake costumes for the whole nursery."),
-            t("«У Ольги рука в гипсе, на катке упала. Какие уж тут свёртки».", "“Olga's arm is in plaster, she fell on the rink. No parcels from her.”"),
-            t("Каждый вечер у Ольги оставался мешок обрезков от снежинок. Обрезки становились обёрткой, а обёртка — поводом зайти к соседям, с которыми она двадцать лет здоровалась только кивком.",
-                "Every evening Olga was left with a bag of offcuts from the snowflakes. The offcuts became wrapping, and the wrapping became an excuse to visit neighbours she'd only nodded to for twenty years."),
-            t("«Сшито с любовью. О.»", "“Sewn with love. O.”")),
-        Suspect("arkady", 3, t("Аркадий", "Arkady"), t("таксист", "taxi driver"), a("slant", "map", "shoes", "night", "quick", "petrol"),
-            t("Ночами возит людей, днём спит.", "Drives people around at night, sleeps by day."),
-            t("«Аркадий? У него машина третью неделю в ремонте, он у брата в Мытищах живёт».", "“Arkady? His car's been in the garage three weeks, he's staying at his brother's out of town.”"),
-            t("Аркадий по ночам развозит чужих людей на чужие праздники. В эту зиму он решил, что праздник будет и в его доме. Между заказами заезжал во двор, оставлял свёрток в старой карте города и уезжал, пока никто не проснулся.",
-                "At night Arkady drives strangers to other people's parties. This winter he decided there'd be a party in his own building too. Between fares he pulled into the yard, left a parcel wrapped in an old city map, and was gone before anyone woke."),
-            t("«Поездка оплачена. А.»", "“This ride is paid for. A.”")),
-        Suspect("nina", 16, t("Бабушка Нина", "Granny Nina"), t("живёт тут с 1971", "here since 1971"), a("curly", "fabric", "cane", "early", "slow", "perfume"),
-            t("Помнит всех, кто когда-либо жил в этом доме.", "Remembers everyone who ever lived in this building."),
-            t("«Нина Петровна до пятого этажа не дойдёт, а подарки и там были».", "“Nina Petrovna can't climb to the fifth floor, and there were presents up there too.”"),
-            t("Нина Петровна помнит, кому что дарили на каждый Новый год с 1971-го. Ей просто стало жаль, что теперь никто не дарит. Она ходила медленно, с палочкой, засветло, пока все на работе, и заворачивала подарки в лоскуты от старых платьев.",
-                "Nina Petrovna remembers who gave what every New Year since 1971. It simply made her sad that nobody gives anything now. She went slowly, with her stick, in daylight while everyone was at work, and wrapped the presents in scraps of old dresses."),
-            t("«Ваша соседка с первого этажа»", "“Your neighbour from the ground floor”")),
+        Suspect(
+            "elvis", 24,
+            t("El Músico de Medianoche", "El Músico de Medianoche"),
+            t("productor y guitarrista (Elvis)", "productor y guitarrista (Elvis)"),
+            a("slant", "kraft", "sneakers", "night", "hum", "coffee_wood"),
+            t("Se queda despierto hasta la madrugada componiendo melodías acústicas y beats.", "Se queda despierto hasta la madrugada componiendo melodías acústicas y beats."),
+            null,
+            t(
+                "¡Siempre fui yo, Mio Principessa! Cada nota de guitarra en Sol# mayor, cada carta sincera, cada broma sobre el Sol y la Rata, y cada detalle en este calendario de código los hice pensando únicamente en tu sonrisa. Te amo con todo mi corazón.",
+                "¡Siempre fui yo, Mio Principessa! Cada nota de guitarra en Sol# mayor, cada carta sincera, cada broma sobre el Sol y la Rata, y cada detalle en este calendario de código los hice pensando únicamente en tu sonrisa. Te amo con todo mi corazón.",
+            ),
+            t("«Para siempre tuyo, Tu Sol (y tu rata favorita). Elvis»", "«Para siempre tuyo, Tu Sol (y tu rata favorita). Elvis»"),
+        ),
+        Suspect(
+            "julian", 18,
+            t("Don Julián", "Don Julián"),
+            t("el sereno nocturno", "el sereno nocturno"),
+            a("round", "string", "shoes", "early", "slow", "tea"),
+            t("Vigila el patio con su linterna amarilla y siempre duerme a las diez de la noche.", "Vigila el patio con su linterna amarilla y siempre duerme a las diez de la noche."),
+            t("«¿Don Julián? Imposible, a las diez en punto apaga su linterna y no sale hasta el amanecer».", "«¿Don Julián? Imposible, a las diez en punto apaga su linterna y no sale hasta el amanecer»."),
+            t("Don Julián cuida el edificio desde hace décadas con cariño paternal.", "Don Julián cuida el edificio desde hace décadas con cariño paternal."),
+            t("«Que tengan buenas noches. Don Julián»", "«Que tengan buenas noches. Don Julián»"),
+        ),
+        Suspect(
+            "clotilde", 9,
+            t("Doña Clotilde", "Doña Clotilde"),
+            t("la repostera", "la repostera"),
+            a("round", "fabric", "heels", "dawn", "slow", "cinnamon"),
+            t("Hornea galletas con olor a canela y vainilla; madruga a las cinco de la mañana.", "Hornea galletas con olor a canela y vainilla; madruga a las cinco de la mañana."),
+            t("«Doña Clotilde no sube las escaleras de noche; se acuesta muy temprano para amasar».", "«Doña Clotilde no sube las escaleras de noche; se acuesta muy temprano para amasar»."),
+            t("Doña Clotilde endulza el vecindario con sus recetas tradicionales.", "Doña Clotilde endulza el vecindario con sus recetas tradicionales."),
+            t("«Con cariño y canela. Clotilde»", "«Con cariño y canela. Clotilde»"),
+        ),
+        Suspect(
+            "mateo", 12,
+            t("Mateo", "Mateo"),
+            t("el cartero ciclista", "el cartero ciclista"),
+            a("quick", "newspaper", "sneakers", "evening", "quick", "mint"),
+            t("Llega en su bicicleta roja con cartas y sellos antiguos; es alérgico al chocolate.", "Llega en su bicicleta roja con cartas y sellos antiguos; es alérgico al chocolate."),
+            t("«Mateo no soporta el chocolate ni los dulces; se le brota la piel al instante».", "«Mateo no soporta el chocolate ni los dulces; se le brota la piel al instante»."),
+            t("Mateo pedalea por todo Ica entregando buenas noticias.", "Mateo pedalea por todo Ica entregando buenas noticias."),
+            t("«Entregado a tiempo. Mateo»", "«Entregado a tiempo. Mateo»"),
+        ),
+        Suspect(
+            "valeria", 10,
+            t("Valeria", "Valeria"),
+            t("la pintora del ático", "la pintora del ático"),
+            a("curly", "paper", "sneakers", "night", "quick", "paint"),
+            t("Tiene las manos manchadas de acuarela y pinta atardeceres en el techo.", "Tiene las manos manchadas de acuarela y pinta atardeceres en el techo."),
+            t("«Valeria usa tinta azul brillante y acuarelas moradas; no escribe con tinta oscura».", "«Valeria usa tinta azul brillante y acuarelas moradas; no escribe con tinta oscura»."),
+            t("Valeria llena de color y arte cada rincón del ático.", "Valeria llena de color y arte cada rincón del ático."),
+            t("«Pinceladas de luz. Valeria»", "«Pinceladas de luz. Valeria»"),
+        ),
+        Suspect(
+            "armando", 11,
+            t("El Profesor Armando", "El Profesor Armando"),
+            t("astrónomo del edificio", "astrónomo del edificio"),
+            a("print", "paper", "shoes", "night", "slow", "oldbooks"),
+            t("Observa la luna con su telescopio y anota en libretas con olor a libros viejos.", "Observa la luna con su telescopio y anota en libretas con olor a libros viejos."),
+            t("«El profesor Armando solo escribe en mayúsculas cuadradas y nunca dibuja».", "«El profesor Armando solo escribe en mayúsculas cuadradas y nunca dibuja»."),
+            t("El profesor conoce cada constelación y estrella en el cielo.", "El profesor conoce cada constelación y estrella en el cielo."),
+            t("«Mirando al cosmos. Prof. Armando»", "«Mirando al cosmos. Prof. Armando»"),
+        ),
+        Suspect(
+            "beatriz", 16,
+            t("Sra. Beatriz", "Sra. Beatriz"),
+            t("la florista", "la florista"),
+            a("curly", "ribbon", "heels", "early", "hum", "eucalyptus"),
+            t("Ata ramitos de flores con cinta dorada y huele a rosas y eucalipto fresco.", "Ata ramitos de flores con cinta dorada y huele a rosas y eucalipto fresco."),
+            t("«Beatriz cierra su florería a las seis de la tarde y no sale en toda la noche».", "«Beatriz cierra su florería a las seis de la tarde y no sale en toda la noche»."),
+            t("Beatriz adora llenar de flores y aromas frescos los descansos del edificio.", "Beatriz adora llenar de flores y aromas frescos los descansos del edificio."),
+            t("«Flores para el alma. Beatriz»", "«Flores para el alma. Beatriz»"),
+        ),
+        Suspect(
+            "tomas", 15,
+            t("Tomás", "Tomás"),
+            t("el barista", "el barista"),
+            a("quick", "napkin", "sneakers", "dawn", "quick", "coffee"),
+            t("Prepara café con dibujos de espuma y escucha jazz suave en el bajo.", "Prepara café con dibujos de espuma y escucha jazz suave en el bajo."),
+            t("«Tomás escribe notas rápidas en servilletas de papel con tinta que se corre».", "«Tomás escribe notas rápidas en servilletas de papel con tinta que se corre»."),
+            t("Tomás despierta al barrio entero con su café de especialidad.", "Tomás despierta al barrio entero con su café de especialidad."),
+            t("«Un café con cariño. Tomás»", "«Un café con cariño. Tomás»"),
+        ),
+        Suspect(
+            "lucia", 14,
+            t("Lucía", "Lucía"),
+            t("la bibliotecaria", "la bibliotecaria"),
+            a("print", "kraft", "shoes", "evening", "slow", "tea"),
+            t("Marca libros con hojas secas; su letra es completamente recta y pulcra.", "Marca libros con hojas secas; su letra es completamente recta y pulcra."),
+            t("«Lucía solo toma té de hierbas y no toma café ni chocolates».", "«Lucía solo toma té de hierbas y no toma café ni chocolates»."),
+            t("Lucía guarda historias y libros para alegrar a los vecinos.", "Lucía guarda historias y libros para alegrar a los vecinos."),
+            t("«Entre páginas. Lucía»", "«Entre páginas. Lucía»"),
+        ),
+        Suspect(
+            "bigotes", 17,
+            t("El Agente Bigotes", "El Agente Bigotes"),
+            t("gato detective del tejado", "gato detective del tejado"),
+            a("paw", "wool", "paws", "night", "skip", "fish"),
+            t("Deja huellitas en el alféizar, roba galletitas y no sabe escribir (¡miau!).", "Deja huellitas en el alféizar, roba galletitas y no sabe escribir (¡miau!)."),
+            t("«¡El Agente Bigotes es un gato! Por más listo que sea, no puede escribir cartas de amor».", "«¡El Agente Bigotes es un gato! Por más listo que sea, no puede escribir cartas de amor»."),
+            t("Bigotes patrulla el tejado ronroneando a la luz de la luna.", "Bigotes patrulla el tejado ronroneando a la luz de la luna."),
+            t("«¡Miau! Patrulla felina cumplida»", "«¡Miau! Patrulla felina cumplida»"),
+        ),
     )
 
-    fun suspect(id: String) = suspects.first { it.id == id }
+    fun suspect(id: String) = suspects.firstOrNull { it.id == id } ?: suspects.first()
 
-    /** How a habit sounds inside a clue. */
     val phrase: Map<Attr, Map<String, Tx>> = mapOf(
         Attr.HAND to mapOf(
-            "slant" to t("размашистый, с сильным наклоном вправо", "sweeping, with a strong slant to the right"),
-            "print" to t("никакой: всё печатными буквами", "none to speak of: all block capitals"),
-            "round" to t("круглый и аккуратный, как в прописях", "round and neat, like a copybook"),
-            "quick" to t("торопливый, буквы скачут", "hurried, the letters jumping about"),
-            "curly" to t("с завитушками, как на старых открытках", "full of curls, like an old postcard")),
+            "slant" to t("letra inclinada a la derecha con pequeñas lunas dibujadas", "letra inclinada a la derecha con pequeñas lunas dibujadas"),
+            "round" to t("letra redonda y prolija como de caligrafía escolar", "letra redonda y prolija como de caligrafía escolar"),
+            "quick" to t("letra rápida e impaciente que baila sobre el papel", "letra rápida e impaciente que baila sobre el papel"),
+            "curly" to t("letra con adornos y florituras artísticas", "letra con adornos y florituras artísticas"),
+            "print" to t("letra en mayúsculas rectas y precisas", "letra en mayúsculas rectas y precisas"),
+            "paw" to t("marcas curiosas como pequeñas huellitas de almohadilla", "marcas curiosas como pequeñas huellitas de almohadilla"),
+        ),
         Attr.WRAP to mapOf(
-            "string" to t("перевязан бечёвкой крест-накрест, как посылка на почте", "tied with string, criss-cross, like a post-office parcel"),
-            "newspaper" to t("завёрнут в газету «Вечерняя Москва»", "wrapped in an evening newspaper"),
-            "paper" to t("завёрнут в тетрадный лист в клетку", "wrapped in a squared exercise-book page"),
-            "notes" to t("завёрнут в нотную бумагу", "wrapped in manuscript paper"),
-            "fabric" to t("обёрнут лоскутом ситца в цветочек", "wrapped in a scrap of flowery cotton"),
-            "map" to t("завёрнут в старую карту города", "wrapped in an old city map"),
-            "bandage" to t("перевязан бинтом вместо ленточки", "tied with a bandage instead of a ribbon")),
+            "kraft" to t("papel kraft fino atado con un lazo carmesí", "papel kraft fino atado con un lazo carmesí"),
+            "string" to t("cuerda rústica atada en cruz con nudo firme", "cuerda rústica atada en cruz con nudo firme"),
+            "fabric" to t("retazos de tela suave con motivos florales", "retazos de tela suave con motivos florales"),
+            "newspaper" to t("papel de periódico doblado con cuidado", "papel de periódico doblado con cuidado"),
+            "paper" to t("hojas blancas de cuaderno de dibujo", "hojas blancas de cuaderno de dibujo"),
+            "ribbon" to t("cinta dorada brillante bien anudada", "cinta dorada brillante bien anudada"),
+            "napkin" to t("servilletas suaves de cafetería", "servilletas suaves de cafetería"),
+            "wool" to t("hebras de lana roja enredadas", "hebras de lana roja enredadas"),
+        ),
         Attr.STEPS to mapOf(
-            "valenki" to t("огромные валенки, размер сорок четвёртый, не меньше", "huge felt boots, size 44 at least"),
-            "kidboots" to t("маленькие детские сапожки", "small children's boots"),
-            "heels" to t("женские сапоги на каблуке", "women's heeled boots"),
-            "sneakers" to t("кроссовки, совсем не по погоде", "trainers, not at all for the weather"),
-            "shoes" to t("мужские ботинки с узкими носами", "men's shoes with pointed toes"),
-            "cane" to t("короткие шаги, а рядом ямки от палочки", "short steps, with little holes from a walking stick")),
+            "sneakers" to t("zapatillas cómodas y silenciosas", "zapatillas cómodas y silenciosas"),
+            "shoes" to t("zapatos formales de cuero que resuenan suavemente", "zapatos formales de cuero que resuenan suavemente"),
+            "heels" to t("tacones que dejan una marca fina y elegante", "tacones que dejan una marca fina y elegante"),
+            "paws" to t("pequeñas huellas silenciosas de cuatro patitas", "pequeñas huellas silenciosas de cuatro patitas"),
+        ),
         Attr.TIME to mapOf(
-            "night" to t("около трёх ночи", "around three in the morning"),
-            "dawn" to t("около шести утра", "around six in the morning"),
-            "evening" to t("около одиннадцати вечера", "around eleven at night"),
-            "early" to t("около пяти вечера, ещё засветло", "around five in the evening, still light")),
+            "night" to t("altas horas de la madrugada (pasadas las dos)", "altas horas de la madrugada (pasadas las dos)"),
+            "dawn" to t("muy temprano al amanecer (alrededor de las cinco)", "muy temprano al amanecer (alrededor de las cinco)"),
+            "evening" to t("al caer la noche (cerca de las diez)", "al caer la noche (cerca de las diez)"),
+            "early" to t("justo al atardecer, cuando la luz cae", "justo al atardecer, cuando la luz cae"),
+        ),
         Attr.GAIT to mapOf(
-            "limp" to t("прихрамывая", "with a limp"),
-            "skip" to t("вприпрыжку", "skipping"),
-            "quick" to t("быстро, почти бегом", "fast, almost running"),
-            "slow" to t("медленно, то и дело останавливаясь", "slowly, stopping every few steps"),
-            "hum" to t("не спеша и напевая что-то под нос", "unhurried, humming something")),
+            "hum" to t("un paso rítmico mientras tararea una melodía acústica", "un paso rítmico mientras tararea una melodía acústica"),
+            "slow" to t("paso lento y pausado", "paso lento y pausado"),
+            "quick" to t("pasos rápidos y enérgicos", "pasos rápidos y enérgicos"),
+            "skip" to t("saltos ágiles y silenciosos", "saltos ágiles y silenciosos"),
+        ),
         Attr.SMELL to mapOf(
-            "wax" to t("сургучом", "of sealing wax"),
-            "chalk" to t("мелом", "of chalk"),
-            "tangerine" to t("мандаринами", "of tangerines"),
-            "tar" to t("морозом и смолой", "of frost and pine tar"),
-            "coffee" to t("крепким кофе", "of strong coffee"),
-            "rosin" to t("канифолью", "of rosin"),
-            "iodine" to t("больницей: йодом и спиртом", "of hospital: iodine and spirit"),
-            "oil" to t("машинным маслом", "of machine oil"),
-            "petrol" to t("бензином", "of petrol"),
-            "perfume" to t("духами «Красная Москва»", "of “Red Moscow” perfume")),
+            "coffee_wood" to t("madera de guitarra acústica y café recién hecho", "madera de guitarra acústica y café recién hecho"),
+            "tea" to t("té de manzanilla y hierbas aromáticas", "té de manzanilla y hierbas aromáticas"),
+            "cinnamon" to t("canela caliente y vainilla horneada", "canela caliente y vainilla horneada"),
+            "mint" to t("menta fresca y aire limpio de la mañana", "menta fresca y aire limpio de la mañana"),
+            "paint" to t("pintura al agua y acuarelas frescas", "pintura al agua y acuarelas frescas"),
+            "oldbooks" to t("libros antiguos y papel añejo", "libros antiguos y papel añejo"),
+            "eucalyptus" to t("eucalipto fresco y flores del jardín", "eucalipto fresco y flores del jardín"),
+            "coffee" to t("café espresso tostado", "café espresso tostado"),
+            "fish" to t("atún fresco para gatos", "atún fresco para gatos"),
+        ),
     )
 
-    /** How a habit sounds in the suspect's file. */
     val habit: Map<Attr, Map<String, Tx>> = mapOf(
         Attr.HAND to mapOf(
-            "slant" to t("Пишет размашисто, с наклоном вправо.", "Writes in big strokes, slanting right."),
-            "print" to t("Пишет только печатными буквами.", "Writes only in block capitals."),
-            "round" to t("Почерк круглый, как в прописях.", "Round copybook handwriting."),
-            "quick" to t("Пишет торопливо, буквы скачут.", "Writes in a hurry, the letters jump."),
-            "curly" to t("Пишет с завитушками.", "Writes with curls and flourishes.")),
+            "slant" to t("Escribe con letra inclinada a la derecha y dibuja pequeñas lunas.", "Escribe con letra inclinada a la derecha y dibuja pequeñas lunas."),
+            "round" to t("Tiene letra redonda y prolija, de caligrafía escolar.", "Tiene letra redonda y prolija, de caligrafía escolar."),
+            "quick" to t("Escribe con trazos veloces e impacientes.", "Escribe con trazos veloces e impacientes."),
+            "curly" to t("Decora cada letra con florituras y adornos.", "Decora cada letra con florituras y adornos."),
+            "print" to t("Escribe únicamente en letras de imprenta.", "Escribe únicamente en letras de imprenta."),
+            "paw" to t("No sabe escribir; solo deja marquitas con sus patitas.", "No sabe escribir; solo deja marquitas con sus patitas."),
+        ),
         Attr.WRAP to mapOf(
-            "string" to t("Свёртки по старой привычке вяжет бечёвкой крест-накрест.", "Out of old habit, ties parcels with string, criss-cross."),
-            "newspaper" to t("Всё заворачивает в газеты.", "Wraps everything in newspaper."),
-            "paper" to t("Дома горы тетрадей в клетку.", "Has piles of squared exercise books at home."),
-            "notes" to t("В квартире кипы нотной бумаги.", "Has stacks of manuscript paper in the flat."),
-            "fabric" to t("Дома мешок цветастых лоскутов.", "Keeps a bag of flowery fabric scraps."),
-            "map" to t("В бардачке стопка старых карт города.", "Keeps a stack of old city maps in the glovebox."),
-            "bandage" to t("В кармане всегда лежит бинт.", "Always has a bandage in a pocket.")),
+            "kraft" to t("Envuelve con papel kraft delicado y lazos rojos.", "Envuelve con papel kraft delicado y lazos rojos."),
+            "string" to t("Ata los paquetes con cuerda rústica en cruz.", "Ata los paquetes con cuerda rústica en cruz."),
+            "fabric" to t("Usa retazos de tela estampada.", "Usa retazos de tela estampada."),
+            "newspaper" to t("Usa páginas de periódico dobladas.", "Usa páginas de periódico dobladas."),
+            "paper" to t("Usa hojas de block de dibujo.", "Usa hojas de block de dibujo."),
+            "ribbon" to t("Usa cinta dorada de regalo.", "Usa cinta dorada de regalo."),
+            "napkin" to t("Usa servilletas de cafetería.", "Usa servilletas de cafetería."),
+            "wool" to t("Usa hilos de lana roja.", "Usa hilos de lana roja."),
+        ),
         Attr.STEPS to mapOf(
-            "valenki" to t("Зимой ходит в валенках сорок четвёртого размера.", "Wears size 44 felt boots in winter."),
-            "kidboots" to t("Носит детские сапожки, тридцать первый размер.", "Wears children's boots, size 31."),
-            "heels" to t("Ходит в сапогах на каблуке.", "Wears heeled boots."),
-            "sneakers" to t("Даже зимой ходит в кроссовках.", "Wears trainers even in winter."),
-            "shoes" to t("Носит ботинки с узкими носами.", "Wears shoes with pointed toes."),
-            "cane" to t("Ходит с палочкой.", "Walks with a stick.")),
+            "sneakers" to t("Calza zapatillas cómodas y silenciosas.", "Calza zapatillas cómodas y silenciosas."),
+            "shoes" to t("Usa zapatos de vestir de suela de cuero.", "Usa zapatos de vestir de suela de cuero."),
+            "heels" to t("Usa calzado con taco que resuena al andar.", "Usa calzado con taco que resuena al andar."),
+            "paws" to t("Camina sobre cuatro almohadillas silenciosas.", "Camina sobre cuatro almohadillas silenciosas."),
+        ),
         Attr.TIME to mapOf(
-            "night" to t("Не спит до трёх ночи.", "Is awake till three in the morning."),
-            "dawn" to t("К шести утра уже на ногах (или только домой).", "Is up by six in the morning (or just getting home)."),
-            "evening" to t("Возвращается домой к одиннадцати вечера.", "Gets home around eleven at night."),
-            "early" to t("Рано ложится, по делам ходит засветло.", "Goes to bed early, runs errands in daylight.")),
+            "night" to t("Sale en plena madrugada, pasada la medianoche.", "Sale en plena madrugada, pasada la medianoche."),
+            "dawn" to t("Se despierta a las cinco de la mañana para salir.", "Se despierta a las cinco de la mañana para salir."),
+            "evening" to t("Sale alrededor de las diez de la noche.", "Sale alrededor de las diez de la noche."),
+            "early" to t("Solo sale justo al atardecer.", "Solo sale justo al atardecer."),
+        ),
         Attr.GAIT to mapOf(
-            "limp" to t("Прихрамывает.", "Walks with a limp."),
-            "skip" to t("Везде скачет вприпрыжку.", "Skips everywhere."),
-            "quick" to t("Всегда бегом.", "Always in a rush."),
-            "slow" to t("Ходит медленно, с остановками.", "Walks slowly, with stops."),
-            "hum" to t("Ходит не спеша и всё время напевает.", "Walks unhurried, always humming.")),
+            "hum" to t("Camina tarareando una melodía acústica con ritmo alegre.", "Camina tarareando una melodía acústica con ritmo alegre."),
+            "slow" to t("Camina despacio, tomándose su tiempo.", "Camina despacio, tomándose su tiempo."),
+            "quick" to t("Camina deprisa, casi corriendo por las escaleras.", "Camina deprisa, casi corriendo por las escaleras."),
+            "skip" to t("Se mueve dando saltos ágiles y silenciosos.", "Se mueve dando saltos ágiles y silenciosos."),
+        ),
         Attr.SMELL to mapOf(
-            "wax" to t("В квартире пахнет сургучом.", "The flat smells of sealing wax."),
-            "chalk" to t("В квартире пахнет мелом.", "The flat smells of chalk."),
-            "tangerine" to t("В квартире пахнет мандаринами.", "The flat smells of tangerines."),
-            "tar" to t("В квартире пахнет морозом и смолой.", "The flat smells of frost and pine tar."),
-            "coffee" to t("В квартире пахнет крепким кофе.", "The flat smells of strong coffee."),
-            "rosin" to t("В квартире пахнет канифолью.", "The flat smells of rosin."),
-            "iodine" to t("В квартире пахнет йодом и спиртом.", "The flat smells of iodine and spirit."),
-            "oil" to t("В квартире пахнет машинным маслом.", "The flat smells of machine oil."),
-            "petrol" to t("В квартире пахнет бензином.", "The flat smells of petrol."),
-            "perfume" to t("В квартире пахнет духами «Красная Москва».", "The flat smells of “Red Moscow” perfume.")),
+            "coffee_wood" to t("Huele a madera de guitarra acústica y café recién hecho.", "Huele a madera de guitarra acústica y café recién hecho."),
+            "tea" to t("Huele a manzanilla y hierbas aromáticas.", "Huele a manzanilla y hierbas aromáticas."),
+            "cinnamon" to t("Huele a canela y vainilla recién horneada.", "Huele a canela y vainilla recién horneada."),
+            "mint" to t("Huele a menta fresca.", "Huele a menta fresca."),
+            "paint" to t("Huele a acuarelas y óleo.", "Huele a acuarelas y óleo."),
+            "oldbooks" to t("Huele a páginas de libros antiguos.", "Huele a páginas de libros antiguos."),
+            "eucalyptus" to t("Huele a eucalipto y flores frescas.", "Huele a eucalipto y flores frescas."),
+            "coffee" to t("Huele a café tostado.", "Huele a café tostado."),
+            "fish" to t("Huele a comida de gato.", "Huele a comida de gato."),
+        ),
     )
 
-    /** A vague yes/no about one habit: whether the culprit's value is in [set]. */
-    class Feature(val key: String, val attr: Attr, val set: Set<String>, val yes: Tx, val no: Tx?)
-
-    private fun f(key: String, attr: Attr, set: Set<String>, yes: Tx, no: Tx?) = Feature(key, attr, set, yes, no)
-
-    val features = listOf(
-        f("neat", Attr.HAND, setOf("round", "curly"), t("аккуратный, буква к букве", "neat, every letter in place"), t("корявый, будто писали на коленке", "scrawled, as if written on a knee")),
-        f("slant", Attr.HAND, setOf("slant", "quick"), t("с заметным наклоном вправо", "slanting noticeably to the right"), t("прямой, без всякого наклона", "upright, no slant at all")),
-        f("ink", Attr.HAND, setOf("slant", "print", "round", "quick", "curly"), t("обычный, шариковой ручкой, ничего особенного", "ordinary, ballpoint pen, nothing special"), null),
-        f("joined", Attr.HAND, setOf("slant", "round", "quick", "curly"), t("взрослый, буквы соединены", "grown-up, the letters joined"), t("детский: каждая буква отдельно, печатными", "childish: every letter separate, in capitals")),
-        f("paper", Attr.WRAP, setOf("newspaper", "paper", "notes", "map", "string"), t("завёрнут в бумагу", "wrapped in paper"), t("безо всякой бумаги", "not wrapped in paper at all")),
-        f("tied", Attr.WRAP, setOf("string", "bandage", "fabric"), t("туго перевязан", "tied up tight"), t("ничем не перевязан, просто завёрнут", "not tied, just wrapped")),
-        f("home", Attr.WRAP, setOf("string", "newspaper", "paper", "notes", "fabric", "map", "bandage"), t("упакован вручную, явно не в магазине", "wrapped by hand, clearly not in a shop"), null),
-        f("nonews", Attr.WRAP, setOf("string", "paper", "notes", "fabric", "map", "bandage"), t("упакован аккуратно, точно не в газету", "wrapped neatly, certainly not in newspaper"), t("завёрнут в газету", "wrapped in newspaper")),
-        f("big", Attr.STEPS, setOf("valenki", "shoes"), t("крупные, мужского размера", "big, a man's size"), t("небольшие", "small")),
-        f("winter", Attr.STEPS, setOf("valenki", "kidboots", "heels", "cane"), t("от тёплой зимней обуви", "from warm winter boots"), t("от лёгкой обуви, совсем не по погоде", "from light shoes, not for the weather at all")),
-        f("pair", Attr.STEPS, setOf("valenki", "kidboots", "heels", "sneakers", "shoes", "cane"), t("одной и той же пары, туда и обратно", "the same pair, there and back"), null),
-        f("adult", Attr.STEPS, setOf("valenki", "heels", "sneakers", "shoes", "cane"), t("взрослые", "a grown-up's"), t("совсем маленькие, детские", "tiny, a child's")),
-        f("dark", Attr.TIME, setOf("night", "dawn", "evening"), t("Было уже темно", "It was already dark"), t("Было ещё светло", "It was still light")),
-        f("late", Attr.TIME, setOf("night", "dawn"), t("Было глубоко за полночь", "It was well past midnight"), t("Было ещё до полуночи", "It was before midnight")),
-        f("quiet", Attr.TIME, setOf("night", "dawn", "evening", "early"), t("Двор был пуст, все сидели по квартирам", "The yard was empty, everyone was indoors"), null),
-        f("fast", Attr.GAIT, setOf("skip", "quick"), t("быстро", "quickly"), t("не торопясь", "unhurriedly")),
-        f("heavy", Attr.GAIT, setOf("limp", "slow"), t("тяжело, будто каждый шаг даётся с трудом", "heavily, as if every step were hard work"), t("легко", "lightly")),
-        f("alone", Attr.GAIT, setOf("limp", "skip", "quick", "slow", "hum"), t("одна, ни с кем не здороваясь", "alone, greeting no one"), null),
-        f("steady", Attr.GAIT, setOf("skip", "quick", "slow", "hum"), t("ровно, не хромая", "evenly, without a limp"), t("прихрамывая", "with a limp")),
-        f("sweet", Attr.SMELL, setOf("tangerine", "perfume", "coffee", "rosin"), t("чем-то приятным, сладковатым", "of something pleasant and sweetish"), t("чем-то резким", "of something sharp")),
-        f("tech", Attr.SMELL, setOf("petrol", "oil", "iodine"), t("чем-то техническим, как в мастерской или больнице", "of something technical, like a workshop or a hospital"), t("вполне по-домашнему", "of home, nothing unusual")),
-        f("faint", Attr.SMELL, setOf("wax", "chalk", "tangerine", "tar", "coffee", "rosin", "iodine", "oil", "petrol", "perfume"), t("чем-то едва уловимым", "of something faint"), null),
-    )
-
-    private fun exact(attr: Attr, v: String, ru: Boolean): String {
-        val p = phrase.getValue(attr).getValue(v)(ru)
-        return if (attr == Attr.TIME) (if (ru) "Было $p" else "It was $p") else p
-    }
-
-    /** Which habit each window speaks about, and in what words. Window 22 gives an alibi instead. */
-    class Slot(val attr: Attr?, val ru: (String) -> String, val en: (String) -> String)
-
-    val slots: Map<Int, Slot> = mapOf(
-        1 to Slot(Attr.HAND, { "На подоконнике открытка без подписи: «Вы не одна». Почерк $it." }, { "On the windowsill, an unsigned card: “You are not alone”. The handwriting is $it." }),
-        2 to Slot(Attr.WRAP, { "У Гоши новые варежки. «Под дверью нашёл, честно». Свёрток был $it." }, { "Gosha has new mittens. “Found them outside the door, honest”. The parcel was $it." }),
-        3 to Slot(Attr.GAIT, { "Аркадий видел ночью во дворе фигуру с мешком. Шла $it." }, { "Arkady saw a figure with a sack in the yard at night. It walked $it." }),
-        4 to Slot(Attr.HAND, { "У Сони на двери пакетик кофе и записка «Сдашь». Почерк $it." }, { "On Sonya's door: a bag of coffee and a note, “You'll pass”. The handwriting is $it." }),
-        5 to Slot(Attr.STEPS, { "Близнецы клянутся, что видели у двери следы. Говорят, $it." }, { "The twins swear they saw footprints by the door. They say: $it." }),
-        6 to Slot(Attr.WRAP, { "Вера Павловна нашла у двери тёплые варежки. Свёрток был $it." }, { "Vera Pavlovna found warm mittens at her door. The parcel was $it." }),
-        7 to Slot(Attr.STEPS, { "Рустам утром подметал и видел у всех дверей одни и те же следы: $it." }, { "Sweeping this morning, Rustam saw the same footprints at every door: $it." }),
-        8 to Slot(Attr.SMELL, { "Бублик вернулся с запиской за ошейником: «Нашёлся у подъезда». Бумажка пахнет $it." }, { "Bagel came home with a note in his collar: “Found by the entrance”. The paper smells $it." }),
-        9 to Slot(Attr.TIME, { "Лев Маркович не спал и слышал, как кто-то тихо поднимался по лестнице. $it." }, { "Lev Markovich lay awake and heard someone creep up the stairs. $it." }),
-        10 to Slot(Attr.TIME, { "Зоя видела, как кто-то оставил свёрток у почтовых ящиков. $it." }, { "Zoya saw someone leave a parcel by the letterboxes. $it." }),
-        11 to Slot(Attr.WRAP, { "Под ёлкой у Кирилла и Ани свёрток без подписи. Он был $it." }, { "Under Kirill and Anya's tree, an unsigned parcel. It was $it." }),
-        12 to Slot(Attr.TIME, { "В журнале наблюдений за рыбками запись: «Скрипнула дверь подъезда». $it." }, { "In the fish-watching log: “The front door creaked”. $it." }),
-        13 to Slot(Attr.GAIT, { "Света укачивала малыша у окна и видела во дворе фигуру со свёртком. Шла $it." }, { "Rocking the baby by the window, Sveta saw a figure with a parcel in the yard. It walked $it." }),
-        14 to Slot(Attr.HAND, { "Ольге подбросили открытку «Спасибо за снежинок». Почерк $it." }, { "Someone left Olga a card: “Thank you for the snowflakes”. The handwriting is $it." }),
-        15 to Slot(Attr.STEPS, { "На свежем катке остались следы к подъезду: $it." }, { "On the fresh ice there are footprints to the entrance: $it." }),
-        16 to Slot(Attr.HAND, { "Нина сравнила открытку со старыми письмами из шкатулки. Почерк $it." }, { "Nina compared the card with old letters from her box. The handwriting is $it." }),
-        17 to Slot(Attr.TIME, { "Гена успел зарисовать во дворе фигуру со свёртком. На эскизе пометка: «$it»." }, { "Gena managed to sketch a figure with a parcel in the yard. A note on the sketch: “$it”." }),
-        18 to Slot(Attr.SMELL, { "Ахмедовым подарили банку мёда. Крышка пахнет $it." }, { "Someone gave the Akhmedovs a jar of honey. The lid smells $it." }),
-        19 to Slot(Attr.GAIT, { "Камера Инны сняла размытую фигуру. По походке видно: шла $it." }, { "Inna's camera caught a blurry figure. You can tell from the walk: it went $it." }),
-        20 to Slot(Attr.SMELL, { "Савва говорит: «Нос не обманешь. Подарок пах $it»." }, { "Savva says: “You can't fool the nose. The present smelled $it”." }),
-        21 to Slot(Attr.STEPS, { "Лена разглядела утром следы на ступенях: $it." }, { "In the morning Lena studied the footprints on the steps: $it." }),
-        22 to Slot(null, { it }, { it }),
-        23 to Slot(Attr.GAIT, { "Маша пишет Деду Морозу: «Я видела вас из окна! Вы шли $it…»" }, { "Masha writes to Grandfather Frost: “I saw you from my window! You were walking $it…”" }),
-    )
-
-    private val nervous = Slot(Attr.SMELL, { "Здесь уверяют, что ничего не видели, и быстро меняют тему. А в прихожей почему-то пахнет $it." },
-        { "They swear they saw nothing here and quickly change the subject. Yet the hallway smells $it." })
-
-    /** What the director chose for one window: a feature, the exact habit, or an alibi. */
-    data class Pick(val kind: String, val attr: Attr? = null, val feature: String? = null, val who: String? = null) {
-        fun encode() = listOf(kind, attr?.name ?: "", feature ?: "", who ?: "").joinToString(":")
-
-        companion object {
-            fun decode(s: String): Pick {
-                val p = s.split(":")
-                return Pick(p[0], p.getOrNull(1)?.takeIf { it.isNotEmpty() }?.let(Attr::valueOf), p.getOrNull(2)?.takeIf { it.isNotEmpty() }, p.getOrNull(3)?.takeIf { it.isNotEmpty() })
-            }
+    data class Clue(val day: Int, val attr: Attr?, val value: String?, val alibiOf: String?, val text: Tx) {
+        fun allows(p: Suspect): Boolean = when {
+            alibiOf != null -> p.id != alibiOf
+            attr != null -> p.traits[attr] == value
+            else -> true
         }
     }
 
-    /** One clue as the player reads it, and which suspects it still allows. */
-    class Clue(val day: Int, val attr: Attr?, val alibiOf: String?, val text: Tx, val allows: (Suspect) -> Boolean)
+    enum class Sharpness { MILD, DIRECT }
+    data class Slot(val day: Int, val attr: Attr?, val alibi: Boolean = false)
+    data class Pick(val slot: Slot, val sharpness: Sharpness)
 
-    private fun targetLeft(d: Int) = when {
-        d <= 10 -> 4
-        d <= 15 -> 3
-        d <= 20 -> 2
-        else -> 1
-    }
+    val slots = mapOf(
+        1 to Slot(1, Attr.HAND),
+        2 to Slot(2, Attr.SMELL),
+        3 to Slot(3, Attr.TIME),
+        4 to Slot(4, Attr.WRAP),
+        5 to Slot(5, Attr.GAIT),
+        6 to Slot(6, Attr.STEPS),
+        7 to Slot(7, Attr.HAND),
+        8 to Slot(8, Attr.TIME),
+        9 to Slot(9, Attr.SMELL),
+        10 to Slot(10, Attr.WRAP),
+        11 to Slot(11, Attr.GAIT),
+        12 to Slot(12, Attr.STEPS),
+        13 to Slot(13, Attr.SMELL),
+        14 to Slot(14, Attr.HAND),
+        15 to Slot(15, Attr.TIME),
+        16 to Slot(16, Attr.WRAP),
+        17 to Slot(17, null, alibi = true),
+        18 to Slot(18, Attr.GAIT),
+        19 to Slot(19, Attr.SMELL),
+        20 to Slot(20, Attr.STEPS),
+        21 to Slot(21, Attr.HAND),
+        22 to Slot(22, null, alibi = true),
+        23 to Slot(23, Attr.WRAP),
+    )
 
-    private fun hostOf(day: Int) = suspects.firstOrNull { it.day == day }
-
-    private fun test(p: Pick, c: Suspect): (Suspect) -> Boolean = when (p.kind) {
-        "alibi" -> { s -> s.id != p.who }
-        "exact" -> { s -> s.traits[p.attr] == c.traits[p.attr] }
-        else -> {
-            val f = features.first { it.key == p.feature }
-            val ok = c.traits.getValue(f.attr) in f.set
-            ({ s -> (s.traits.getValue(f.attr) in f.set) == ok })
-        }
-    }
-
-    /** Plans the season's 23 clues so the culprit can be named only near the end. */
-    fun plan(culprit: String, random: Random): Map<Int, Pick> {
-        val c = suspect(culprit)
-        var left = suspects
-        val out = mutableMapOf<Int, Pick>()
-        for (d in 1..23) {
-            val slot = slots.getValue(d)
-            val options = if (slot.attr == null) {
-                suspects.filter { it.id != c.id && it.alibi != null }.map { Pick("alibi", who = it.id) }
-            } else {
-                val attr = if (hostOf(d)?.id == c.id) Attr.SMELL else slot.attr
-                features.filter { it.attr == attr }.map { Pick("feat", attr, it.key) } + Pick("exact", attr)
-            }
-            val counted = options.map { it to left.count(test(it, c)) }
-            val target = targetLeft(d)
-            val chosen = if (d >= 21) {
-                val m = counted.minOf { it.second }
-                counted.filter { it.second == m }
-            } else {
-                val good = counted.filter { it.second >= target }
-                if (good.isNotEmpty()) good.filter { it.second == good.minOf { g -> g.second } }
-                else counted.filter { it.second == counted.maxOf { m -> m.second } }
-            }
-            val pick = chosen[random.nextInt(chosen.size)].first
-            out[d] = pick
-            left = left.filter(test(pick, c))
-        }
-        return out
-    }
-
-    fun clue(day: Int, culprit: String, plan: Map<Int, Pick>): Clue? {
+    fun clue(day: Int, culpritId: String, plan: Map<Int, Pick>): Clue? {
         val slot = slots[day] ?: return null
-        val pick = plan[day] ?: return null
-        val c = suspect(culprit)
-        val words = if (hostOf(day)?.id == c.id && slot.attr != null) nervous else slot
-        if (pick.kind == "alibi") {
-            val a = suspect(pick.who!!)
-            return Clue(day, null, a.id, t("Пётр Ильич знает всех в доме: ${a.alibi!!.ru}", "Pyotr Ilyich knows everyone in the building: ${a.alibi!!.en}"), test(pick, c))
+        val c = suspect(culpritId)
+        val p = plan[day] ?: Pick(slot, Sharpness.DIRECT)
+
+        if (slot.alibi) {
+            val other = suspects.firstOrNull { it.id != culpritId && it.alibi != null } ?: suspects.first { it.id != culpritId }
+            return Clue(day, null, null, other.id, other.alibi ?: t("Tiene una coartada comprobada.", "Tiene una coartada comprobada."))
         }
-        val attr = pick.attr!!
-        val value: (Boolean) -> String = if (pick.kind == "exact") { ru -> exact(attr, c.traits.getValue(attr), ru) } else {
-            val f = features.first { it.key == pick.feature }
-            val ok = c.traits.getValue(attr) in f.set
-            ({ ru -> (if (ok) f.yes else f.no!!)(ru) })
+
+        val attr = slot.attr ?: return null
+        val traitVal = c.traits.getValue(attr)
+        val traitText = cleanLocalizedText(phrase.getValue(attr).getValue(traitVal).en)
+
+        val fullText = when (attr) {
+            Attr.HAND -> t("La nota encontrada tiene $traitText.", "La nota encontrada tiene $traitText.")
+            Attr.WRAP -> t("El paquete estaba envuelto con $traitText.", "El paquete estaba envuelto con $traitText.")
+            Attr.STEPS -> t("En el descansillo quedaron huellas de $traitText.", "En el descansillo quedaron huellas de $traitText.")
+            Attr.TIME -> t("Quien dejó el detalle pasó a $traitText.", "Quien dejó el detalle pasó a $traitText.")
+            Attr.GAIT -> t("Alguien escuchó alejarse $traitText.", "Alguien escuchó alejarse $traitText.")
+            Attr.SMELL -> t("Cerca de la puerta quedó un inconfundible aroma a $traitText.", "Cerca de la puerta quedó un inconfundible aroma a $traitText.")
         }
-        return Clue(day, attr, null, Tx(words.ru(value(true)), words.en(value(false))), test(pick, c))
+        return Clue(day, attr, traitVal, null, fullText)
     }
 
-    fun encode(plan: Map<Int, Pick>) = plan.entries.sortedBy { it.key }.joinToString(";") { "${it.key}=${it.value.encode()}" }
-    fun decode(s: String): Map<Int, Pick> = s.split(";").filter { it.contains("=") }.associate { e -> e.substringBefore("=").toInt() to Pick.decode(e.substringAfter("=")) }
+    fun cleanLocalizedText(raw: String): String {
+        val txRegex = Regex("""Tx\(ru=([^,]*),\s*en=([^)]*)\)""")
+        return txRegex.replace(raw) { matchResult ->
+            val en = matchResult.groupValues[2].trim()
+            val ru = matchResult.groupValues[1].trim()
+            if (en.isNotBlank()) en else ru
+        }
+    }
+
+    fun plan(culpritId: String, random: Random = Random.Default): Map<Int, Pick> {
+        return slots.mapValues { (_, slot) ->
+            Pick(slot, Sharpness.DIRECT)
+        }
+    }
+
+    fun encode(plan: Map<Int, Pick>): String = plan.entries.sortedBy { it.key }.joinToString(",") { "${it.key}:${it.value.sharpness.name.first()}" }
+    fun decode(s: String): Map<Int, Pick> = if (s.isBlank()) emptyMap() else s.split(",").associate { chunk ->
+        val (k, v) = chunk.split(":")
+        val day = k.toInt()
+        val slot = slots.getValue(day)
+        day to Pick(slot, if (v == "M") Sharpness.MILD else Sharpness.DIRECT)
+    }
 }

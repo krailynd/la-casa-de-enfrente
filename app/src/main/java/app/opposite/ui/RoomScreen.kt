@@ -28,10 +28,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.opposite.domain.ActivityType
+import app.opposite.domain.AdventData
 import app.opposite.domain.Evening
 import app.opposite.domain.Gift
 import app.opposite.domain.House
 import app.opposite.domain.Rules
+import app.opposite.domain.Vouchers
 import app.opposite.ui.art.ROOM_H
 import app.opposite.ui.art.ROOM_W
 import app.opposite.ui.art.room
@@ -54,59 +57,170 @@ fun RoomScreen(evening: Evening, d: Int, acts: Acts) {
     var said by remember(d) { mutableStateOf<Said?>(null) }
     val ru = LocalRu.current
     val clueFound = d in s.clues
-    Column(Modifier.fillMaxSize().background(C.bg).verticalScroll(rememberScrollState()).statusBarsPadding().navigationBarsPadding()) {
+    val dayData = AdventData.get(d)
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(C.bg)
+            .verticalScroll(rememberScrollState())
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
+        // Top bar
         Row(Modifier.padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("←", style = T.Title, modifier = Modifier.clip(Sh.Sm).clickable { acts.open(null) }.padding(horizontal = 10.dp, vertical = 4.dp))
             Column {
                 Text(r.name.s(), style = T.Name)
-                Text("${t("окно", "window")} $d · ${r.flat.s()}", style = T.Muted)
+                Text("ventana $d · ${r.flat.s()}", style = T.Muted)
             }
         }
+
+        // Room scene
         Picture(ROOM_W, ROOM_H, onTap = { x, y ->
             when (val hit = roomHit(r, x, y, d in s.rare)) {
                 null -> {}
-                -2 -> { acts.season { Rules.findMandarin(it, d) }; said = Said.Mandarin }
+                -2 -> {
+                    acts.season { Rules.findMandarin(it, d) }
+                    said = Said.Mandarin
+                }
                 else -> {
                     val th = r.things[hit]
                     if (th.clue && s.clue(d) != null) {
                         val first = d !in s.clues
                         acts.season { Rules.findClue(it, d) }
                         said = Said.Clue(s.clue(d)!!.text(ru), first)
-                        if (first) acts.toast(if (ru) "✎ Улика записана в блокнот" else "✎ Clue written in the notebook")
-                    } else said = Said.Note(th.note?.invoke(ru) ?: "…")
+                        if (first) acts.toast("✎ Pista anotada en tu cuaderno")
+                    } else {
+                        said = Said.Note(th.note?.invoke(ru) ?: "…")
+                    }
                 }
             }
         }) { room(r, clueFound, d in s.rare, time) }
+
+        // Story
         Text(r.story.s(), style = T.Body, modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 12.dp))
+
+        // Bubble for speech / items
         val bubble = said
         val isClue = bubble is Said.Clue || bubble is Said.Mandarin
         Column(
-            Modifier.padding(horizontal = 16.dp, vertical = 10.dp).fillMaxWidth().heightIn(min = 54.dp).clip(Sh.Md)
-                .background(if (isClue) C.clue else C.paper).then(if (isClue) Modifier.border(2.dp, C.warm, Sh.Md) else Modifier).padding(horizontal = 14.dp, vertical = 10.dp),
+            Modifier
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .fillMaxWidth()
+                .heightIn(min = 54.dp)
+                .clip(Sh.Md)
+                .background(if (isClue) C.clue else C.paper)
+                .then(if (isClue) Modifier.border(2.dp, C.warm, Sh.Md) else Modifier)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
         ) {
             when (bubble) {
-                is Said.Clue -> { Text(if (bubble.first) t("улика в блокнот", "clue for the notebook").uppercase() else t("улика", "clue").uppercase(), style = T.Eyebrow.copy(color = C.red)); Text(bubble.text, style = T.Hand) }
-                Said.Mandarin -> { Text(t("находка", "a find").uppercase(), style = T.Eyebrow.copy(color = C.red)); Text(t("Мандарин! Игрушка №$d на ёлке стала «бабушкиной», с золотой посыпкой.", "A tangerine! Ornament no. $d on the tree became a “granny's” one, with gold dust."), style = T.Hand) }
+                is Said.Clue -> {
+                    Text(if (bubble.first) "PISTA PARA EL CUADERNO" else "PISTA", style = T.Eyebrow.copy(color = C.red))
+                    Text(bubble.text, style = T.Hand)
+                }
+                Said.Mandarin -> {
+                    Text("UN DETALLE ESPECIAL", style = T.Eyebrow.copy(color = C.red))
+                    Text("¡Encontraste una mandarina! El adorno n.º $d del árbol ahora brilla con destellos dorados.", style = T.Hand)
+                }
                 is Said.Note -> Text(bubble.text, style = T.Hand)
-                null -> Text(if (s.clue(d) != null && !clueFound) t("Тапайте по вещам в комнате. Где-то блестит что-то важное.", "Tap things in the room. Something important is glinting.") else t("Тапайте по вещам в комнате.", "Tap things in the room."), style = T.Hand)
+                null -> Text(
+                    if (s.clue(d) != null && !clueFound) "Toca los objetos de la habitación. Algo importante está brillando."
+                    else "Toca los objetos de la habitación para explorar.",
+                    style = T.Hand,
+                )
             }
         }
-        if (r.mandarin != null && d !in s.rare) Text(t("Говорят, в некоторых комнатах закатился мандарин…", "They say a tangerine has rolled into some of the rooms…"), style = T.Muted, modifier = Modifier.padding(horizontal = 18.dp))
-        s.gifts[d]?.let { GiftCard(it, s.giftsFrom) }
-        if (d == 24 && !s.over) {
-            Spacer(Modifier.height(10.dp))
-            WarmButton(t("Пора назвать Тайного Деда →", "Time to name the Secret Grandfather →"), Modifier.padding(horizontal = 16.dp)) { acts.open(null); acts.tab(Tab.NOTES) }
+
+        // Integrated Minigame / Activity for today
+        when (dayData.activityType) {
+            ActivityType.COLORING -> {
+                ColoringGame(dayData.coloringTheme ?: "luna_estrellas") {
+                    acts.season { Rules.findClue(it, d) }
+                    acts.toast("¡Dibujo terminado y colgado en tu Árbol! 🎄✨")
+                }
+            }
+            ActivityType.SCRATCH_VOUCHER -> {
+                val voucher = Vouchers.forDay(d)
+                if (voucher != null) {
+                    ScratchCardGame(voucher) {
+                        acts.store.redeemVoucher(voucher.id, System.currentTimeMillis())
+                        acts.season { Rules.findClue(it, d) }
+                        acts.toast("¡Vale guardado en tu buzón de sorpresas! 🎁")
+                    }
+                }
+            }
+            ActivityType.TRIVIA -> {
+                if (dayData.trivia != null) {
+                    TriviaGame(dayData.trivia) {
+                        acts.season { Rules.findClue(it, d) }
+                        acts.toast("¡Pista descubierta y anotada en tu cuaderno! ✎")
+                    }
+                }
+            }
+            ActivityType.MEMORAMA -> {
+                MemoramaGame(dayData.memoryPairs ?: listOf("Luna", "Sol", "Frambuesa", "Mora", "Guitarra", "Carta")) {
+                    acts.season { Rules.findClue(it, d) }
+                    acts.toast("¡Recuerdo completado y pista anotada! ✎")
+                }
+            }
+            ActivityType.CONSTELLATION -> {
+                ConstellationGame {
+                    acts.season { Rules.findClue(it, d) }
+                    acts.toast("¡Constelación revelada y pista anotada! ✎")
+                }
+            }
+            ActivityType.RIDDLE -> {
+                RiddleGame {
+                    acts.season { Rules.findClue(it, d) }
+                    acts.toast("¡Acertijo resuelto y pista anotada! ✎")
+                }
+            }
+            ActivityType.PROMISE_JAR -> {
+                PromiseJarGame {
+                    acts.season { Rules.findClue(it, d) }
+                    acts.toast("¡Promesa guardada en tu corazón! 🫙✨")
+                }
+            }
+            ActivityType.LETTER -> {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clip(Sh.Md)
+                        .background(C.card)
+                        .border(1.dp, C.red, Sh.Md)
+                        .padding(14.dp)
+                ) {
+                    Column {
+                        Text("💌 Detalle para Principessa", style = T.Name.copy(color = C.warm, fontSize = 16.sp))
+                        Spacer(Modifier.height(6.dp))
+                        Text(dayData.clueNote, style = T.Hand.copy(color = C.ink, fontSize = 18.sp))
+                    }
+                }
+            }
+            ActivityType.FINALE -> {
+                Spacer(Modifier.height(10.dp))
+                WarmButton("Ir al Cuaderno y Nombrar al Admirador Secreto →", Modifier.padding(horizontal = 16.dp)) {
+                    acts.open(null)
+                    acts.tab(Tab.NOTES)
+                }
+            }
+            ActivityType.ANNIVERSARY_BONUS -> {}
         }
-        Spacer(Modifier.height(24.dp))
+
+        s.gifts[d]?.let { GiftCard(it, s.giftsFrom) }
+
+        Spacer(Modifier.height(28.dp))
     }
 }
 
 @Composable
 fun giftKind(kind: String) = when (kind) {
-    "treat" -> "🍬" to t("сладкое", "treat")
-    "note" -> "💌" to t("записка", "note")
-    "deed" -> "✨" to t("дело", "deed")
-    else -> "🎁" to t("найти", "find")
+    "treat" -> "🍬" to "dulce"
+    "note" -> "💌" to "nota"
+    "deed" -> "✨" to "detalle"
+    else -> "🎁" to "encontrar"
 }
 
 @Composable
@@ -117,12 +231,14 @@ private fun GiftCard(g: Gift, from: String) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(icon, style = T.Title)
                 Column(Modifier.padding(start = 10.dp)) {
-                    Text(t("за этим окном подарок", "a present behind this window").uppercase(), style = T.Eyebrow.copy(color = C.red))
-                    Text(label + if (from.isNotBlank()) " · ${t("от", "from")}: $from" else "", style = T.Muted.copy(color = C.paperMuted))
+                    Text("UN REGALO TRAS ESTA VENTANA", style = T.Eyebrow.copy(color = C.red))
+                    Text(label + if (from.isNotBlank()) " · de: $from" else "", style = T.Muted.copy(color = C.paperMuted))
                 }
             }
             Text(g.text, style = T.HandBig.copy(fontSize = 25.sp), modifier = Modifier.padding(top = 8.dp))
         }
-        Box(Modifier.align(Alignment.TopEnd).padding(10.dp).clip(Sh.Sm).background(Color(0x22C8483C)).padding(horizontal = 6.dp, vertical = 2.dp)) { Text("✦", style = T.Muted.copy(color = C.red)) }
+        Box(Modifier.align(Alignment.TopEnd).padding(10.dp).clip(Sh.Sm).background(Color(0x22C8483C)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+            Text("✦", style = T.Muted.copy(color = C.red))
+        }
     }
 }

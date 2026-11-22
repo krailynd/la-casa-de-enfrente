@@ -45,26 +45,26 @@ fun FinaleScreen(evening: Evening, acts: Acts) {
             Text("←", style = T.Title, modifier = Modifier.statusBarsPadding().padding(8.dp).clickable { acts.open(null) }.padding(8.dp), color = C.ink)
         }
         Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
-            Eyebrow(t("Тайный Дед этого года", "This year's Secret Grandfather"))
+            Eyebrow(t("Тайный Дед этого года", "El Abuelo Secreto de este año"))
             Text(c.name.s(), style = T.Title.copy(fontSize = 26.sp), modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
             Text(c.finale.s(), style = T.Body)
             Spacer(Modifier.height(10.dp))
             Text(
                 t("Сегодня весь подъезд собрался в пятой квартире. На столе лежит двадцать четвёртый свёрток, и он ${Mystery.phrase.getValue(Mystery.Attr.WRAP).getValue(c.traits.getValue(Mystery.Attr.WRAP)).ru}. На нём ваше имя.",
-                    "Tonight the whole stairwell gathered in flat 5. On the table lies the twenty-fourth parcel, ${Mystery.phrase.getValue(Mystery.Attr.WRAP).getValue(c.traits.getValue(Mystery.Attr.WRAP)).en}. It has your name on it."),
+                    "Esta noche todo el portal se reunió en el piso 5. Sobre la mesa descansa el vigésimo cuarto paquete, ${Mystery.phrase.getValue(Mystery.Attr.WRAP).getValue(c.traits.getValue(Mystery.Attr.WRAP)).en}. Lleva tu nombre."),
                 style = T.Body,
             )
             Text(c.sign.s(), style = T.Hand.copy(color = C.warm, fontSize = 24.sp), modifier = Modifier.padding(vertical = 12.dp))
             val n = s.litCount
             Text(
-                (if (s.tries == 0) t("Разгадано с первой попытки. ", "Solved at the first try. ") else t("Разгадано с ${s.tries + 1}-й попытки. ", "Solved at try ${s.tries + 1}. ")) +
+                (if (s.tries == 0) t("Разгадано с первой попытки. ", "¡Resuelto al primer intento! ") else t("Разгадано с ${s.tries + 1}-й попытки. ", "Resuelto al intento n.º ${s.tries + 1}. ")) +
                     t("Ёлка переедет на антресоль: $n ${plural(n, "игрушка", "игрушки", "игрушек")}${if (s.rare.isNotEmpty()) ", бабушкиных: ${s.rare.size}" else ""}. В следующем декабре Тайным Дедом может оказаться кто угодно.",
-                        "The tree goes up on the shelf: $n ornaments${if (s.rare.isNotEmpty()) ", ${s.rare.size} granny's" else ""}. Next December the Secret Grandfather could be anyone."),
+                        "El árbol sube al estante: $n adornos${if (s.rare.isNotEmpty()) ", ${s.rare.size} de la abuela" else ""}. El próximo diciembre, cualquiera podría ser el Abuelo Secreto."),
                 style = T.Muted,
             )
             Spacer(Modifier.height(16.dp))
             Row {
-                WarmButton(t("Убрать ёлку на антресоль", "Put the tree on the shelf")) {
+                WarmButton(t("Убрать ёлку на антресоль", "Guardar el árbol en el estante")) {
                     val year = s.startDate.year
                     acts.settings { st ->
                         st.copy(
@@ -74,10 +74,10 @@ fun FinaleScreen(evening: Evening, acts: Acts) {
                     }
                     acts.open(null)
                     acts.tab(Tab.TREE)
-                    acts.toast(if (ru) "Ёлка на антресоли. До следующего декабря!" else "The tree is on the shelf. Until next December!")
+                    acts.toast(if (ru) "Ёлка на антресоли. До следующего декабря!" else "¡El árbol está en el estante. Hasta el próximo diciembre!")
                 }
                 Spacer(Modifier.width(10.dp))
-                GhostButton(t("Во двор", "To the yard")) { acts.open(null) }
+                GhostButton(t("Во двор", "Volver al patio")) { acts.open(null) }
             }
             Spacer(Modifier.height(24.dp))
         }

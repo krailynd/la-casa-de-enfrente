@@ -42,6 +42,7 @@ import app.opposite.domain.Rules
 import app.opposite.domain.Season
 import app.opposite.store
 import app.opposite.sunset
+import app.opposite.music.MusicController
 import app.opposite.ui.theme.C
 import app.opposite.ui.theme.Sh
 import app.opposite.ui.theme.T
@@ -49,13 +50,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 
-enum class Tab { HOUSE, NOTES, TREE }
+enum class Tab { HOUSE, NOTES, TREE, MUSIC, LETTERS }
 
 sealed interface Overlay {
     data class Room(val day: Int) : Overlay
     data object Finale : Overlay
     data object Gifts : Overlay
     data object Settings : Overlay
+    data object Vouchers : Overlay
+    data object OurNotebook : Overlay
+    data class Minigame(val day: Int) : Overlay
 }
 
 sealed interface Sheet {
@@ -74,20 +78,25 @@ class Acts(
     val toast: (String) -> Unit,
     val tab: (Tab) -> Unit,
     val ignite: (Int) -> Unit,
+    val store: app.opposite.data.Store,
 )
 
 @Composable
 fun Root(settings: Settings, fixedNow: Long? = null, startTab: Tab = Tab.HOUSE, startOverlay: Overlay? = null, startSheet: Sheet? = null) {
     val context = LocalContext.current
-    val season = settings.season
-    if (!settings.onboarded || season == null) {
-        Onboarding(settings) { change -> context.store.update(change) }
-        return
+    val season = if (settings.previewMode && settings.previewSeason != null) {
+        settings.previewSeason
+    } else {
+        settings.season ?: run {
+            val s = app.opposite.data.DemoSeed.season(java.time.LocalDate.now())
+            context.store.update { it.copy(season = s) }
+            s
+        }
     }
     var now by remember { mutableLongStateOf(fixedNow ?: System.currentTimeMillis()) }
     if (fixedNow == null) LaunchedEffect(Unit) { while (true) { delay(20_000); now = System.currentTimeMillis() } }
     val zone = ZoneId.systemDefault()
-    val evening = Evening(season, now, zone, settings.sunset(zone))
+    val evening = Evening(season, now, zone, settings.sunset(zone), settings.previewMode)
 
     var tab by remember { mutableStateOf(startTab) }
     var overlay by remember { mutableStateOf(startOverlay) }
@@ -120,11 +129,13 @@ fun Root(settings: Settings, fixedNow: Long? = null, startTab: Tab = Tab.HOUSE, 
                 toast = null
             }
         },
+        store = context.store,
     )
     LaunchedEffect(toastId) { if (toast != null) { delay(3300); toast = null } }
 
-    BackHandler(sheet != null || overlay != null || tab != Tab.HOUSE) {
+    BackHandler(MusicController.isPlayerExpanded || sheet != null || overlay != null || tab != Tab.HOUSE) {
         when {
+            MusicController.isPlayerExpanded -> MusicController.isPlayerExpanded = false
             sheet != null -> sheet = null
             overlay != null -> overlay = null
             else -> tab = Tab.HOUSE
@@ -132,13 +143,22 @@ fun Root(settings: Settings, fixedNow: Long? = null, startTab: Tab = Tab.HOUSE, 
     }
 
     Box(Modifier.fillMaxSize().background(C.bg)) {
+        LaunchedEffect(Unit) {
+            app.opposite.sync.GitHubSyncRepository.initialize(context)
+        }
+
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f)) {
                 when (tab) {
                     Tab.HOUSE -> HouseScreen(evening, settings, acts, igniting, ignite.value)
-                    Tab.NOTES -> NotebookScreen(evening, acts)
+                    Tab.NOTES -> NotebookScreen(evening, settings, acts)
                     Tab.TREE -> TreeScreen(evening, settings, acts)
+                    Tab.MUSIC -> MusicScreen(acts)
+                    Tab.LETTERS -> LettersGalleryScreen(acts)
                 }
+            }
+            if (MusicController.currentSong != null) {
+                MiniPlayerBar()
             }
             BottomBar(tab) { tab = it }
         }
@@ -147,9 +167,26 @@ fun Root(settings: Settings, fixedNow: Long? = null, startTab: Tab = Tab.HOUSE, 
             Overlay.Finale -> FinaleScreen(evening, acts)
             Overlay.Gifts -> GiftsScreen(evening, acts)
             Overlay.Settings -> SettingsScreen(settings, evening, acts)
+            Overlay.Vouchers -> VouchersScreen(settings, acts)
+            Overlay.OurNotebook -> OurNotebookScreen(acts)
+            is Overlay.Minigame -> AnniversaryBonusScreen(acts)
             null -> {}
         }
         Sheets(sheet, evening, acts)
+
+        // Francesca Welcome Tour (se muestra la primera vez o cuando se reinicia para ella)
+        if (!settings.onboarded) {
+            FrancescaWelcomeDialog(
+                onDismiss = {
+                    context.store.update { it.copy(onboarded = true) }
+                }
+            )
+        }
+
+        if (MusicController.isPlayerExpanded) {
+            FullScreenPlayer()
+        }
+
         AnimatedVisibility(toast != null, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.TopCenter)) {
             Text(
                 toast ?: "", style = T.Body.copy(color = C.paperInk), textAlign = TextAlign.Center,
@@ -163,7 +200,13 @@ fun Root(settings: Settings, fixedNow: Long? = null, startTab: Tab = Tab.HOUSE, 
 @Composable
 private fun BottomBar(tab: Tab, onTab: (Tab) -> Unit) {
     Row(Modifier.fillMaxWidth().background(C.bg2).navigationBarsPadding().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-        for ((tb, glyph, label) in listOf(Triple(Tab.HOUSE, "▦", t("Дом", "House")), Triple(Tab.NOTES, "✎", t("Блокнот", "Notebook")), Triple(Tab.TREE, "▲", t("Ёлка", "Tree")))) {
+        for ((tb, glyph, label) in listOf(
+            Triple(Tab.HOUSE, "▦", t("Дом", "Casa")),
+            Triple(Tab.NOTES, "✎", t("Блокнот", "Cuaderno")),
+            Triple(Tab.TREE, "▲", t("Ёлка", "Árbol")),
+            Triple(Tab.MUSIC, "♫", "Música"),
+            Triple(Tab.LETTERS, "💌", "Cartas"),
+        )) {
             val on = tb == tab
             Column(Modifier.weight(1f).clickable { onTab(tb) }.padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(glyph, style = T.Body, color = if (on) C.warm else C.dim)

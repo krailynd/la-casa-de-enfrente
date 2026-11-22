@@ -2,6 +2,8 @@ package app.opposite.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,11 +34,13 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.opposite.data.Settings
 import app.opposite.domain.Evening
 import app.opposite.domain.House
@@ -76,34 +80,55 @@ fun TreeScreen(evening: Evening, settings: Settings, acts: Acts) {
     var picked by remember { mutableStateOf<Int?>(null) }
     val ornaments = s.lit.keys.sorted().map { it to (it in s.rare) }
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        Header(evening, acts)
-        Eyebrow(t("Ёлка сезона · ${ornaments.size} ${plural(ornaments.size, "игрушка", "игрушки", "игрушек")}", "This season's tree · ${ornaments.size} ornaments"), Modifier.padding(start = 18.dp, top = 6.dp, bottom = 6.dp))
+        Header(evening, settings, acts)
+        Eyebrow("Nuestro Árbol de Recuerdos · ${ornaments.size} ${if (ornaments.size == 1) "adorno" else "adornos"}", Modifier.padding(start = 18.dp, top = 6.dp, bottom = 6.dp))
         val img = base
         if (img == null) Box(Modifier.fillMaxWidth().aspectRatio(TREE_W / TREE_H).background(Brush.verticalGradient(listOf(c(0xFF2A2236), c(0xFF46354A)))), contentAlignment = Alignment.Center) {
-            Text(t("Ставим ёлку…", "Putting up the tree…"), style = T.Muted)
+            Text(t("Ставим ёлку…", "Montando el árbol…"), style = T.Muted)
         } else Picture(TREE_W, TREE_H, onTap = { x, y -> picked = TreeArt.hit(x, y, s.lit.keys) }) {
             ds.drawImage(img, IntOffset.Zero, IntSize(img.width, img.height), IntOffset.Zero, IntSize(TREE_W.toInt(), TREE_H.toInt()), filterQuality = FilterQuality.High)
             TreeArt.live(this, ornaments, time)
         }
         val p = picked
         Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp).fillMaxWidth().clip(Sh.Md).background(C.paper).padding(14.dp)) {
-            if (p == null) Text(t("Каждое зажжённое окно вешает на ёлку игрушку. Найденный мандарин делает её «бабушкиной». Тапните по игрушке.", "Every lit window hangs an ornament on the tree. A tangerine found makes it a “granny's” one. Tap an ornament."), style = T.Hand)
+            if (p == null) Text("Cada ventana encendida cuelga un adorno en tu árbol. Toca un adorno para ver su recuerdo.", style = T.Hand)
             else {
                 val r = House.resident(p)
-                Text("${dateText(s.date(p))}${if (p in s.rare) t(" · бабушкина", " · granny's") else ""}".uppercase(), style = T.Eyebrow.copy(color = C.paperMuted))
+                Text("${dateText(s.date(p))}${if (p in s.rare) " · dorado" else ""}".uppercase(), style = T.Eyebrow.copy(color = C.paperMuted))
                 Text("${r.name.s()}: «${r.task.s()}»", style = T.Hand)
             }
         }
-        Eyebrow(t("Венок · свечей в запасе: ${s.candles}", "Wreath · candles in reserve: ${s.candles}"), Modifier.padding(start = 18.dp, top = 10.dp))
+
+        // Vouchers Button
+        Box(
+            Modifier
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .fillMaxWidth()
+                .clip(Sh.Md)
+                .background(C.card)
+                .border(1.dp, C.red, Sh.Md)
+                .clickable { acts.open(Overlay.Vouchers) }
+                .padding(14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🎁", fontSize = 24.sp, modifier = Modifier.padding(end = 10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Mis Vales y Sorpresas", style = T.Name.copy(color = C.ink, fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                    Text("Ver cupones de tiempo juntos y detalles caseros", style = T.Muted.copy(color = C.dim, fontSize = 12.sp))
+                }
+                Text("›", style = T.Title.copy(color = C.dim))
+            }
+        }
+        Eyebrow(t("Венок · свечей в запасе: ${s.candles}", "Corona de adviento · velas de reserva: ${s.candles}"), Modifier.padding(start = 18.dp, top = 10.dp))
         Wreath(s.candles)
         Text(
-            t("Огонёк в воскресенье зажигает свечу. Свечой можно зажечь пропущенное окно: ни стриков, ни штрафов.", "A Sunday spark lights a candle. A candle can light a missed window: no streaks, no penalties."),
+            t("Огонёк в воскресенье зажигает свечу. Свечой можно зажечь пропущенное окно: ни стриков, ни штрафов.", "La chispa de un domingo enciende una vela. Con una vela puedes recuperar una ventana perdida: sin rachas perdidas ni penalizaciones."),
             style = T.Muted, modifier = Modifier.padding(horizontal = 24.dp),
         )
-        Eyebrow(t("Антресоль", "Top shelf"), Modifier.padding(start = 18.dp, top = 18.dp, bottom = 4.dp))
-        if (settings.shelf.isEmpty()) Text(t("Здесь будут ёлки прошлых лет. Пока пусто.", "Trees from past years will be kept here. Empty so far."), style = T.Muted, modifier = Modifier.padding(horizontal = 18.dp))
+        Eyebrow(t("Антресоль", "El estante"), Modifier.padding(start = 18.dp, top = 18.dp, bottom = 4.dp))
+        if (settings.shelf.isEmpty()) Text(t("Здесь будут ёлки прошлых лет. Пока пусто.", "Aquí se guardarán los árboles de años anteriores. Por ahora está vacío."), style = T.Muted, modifier = Modifier.padding(horizontal = 18.dp))
         for (past in settings.shelf.sortedByDescending { it.year }) Text(
-            "${past.year} · ${past.ornaments.size} ${t("игрушек", "ornaments")}${if (past.rare.isNotEmpty()) t(", бабушкиных ${past.rare.size}", ", ${past.rare.size} granny's") else ""} · ${t("Тайный Дед", "Secret Grandfather")}: ${if (past.solved) Mystery.suspect(past.culprit).name.s() else "?"}",
+            "${past.year} · ${past.ornaments.size} ${t("игрушек", "adornos")}${if (past.rare.isNotEmpty()) t(", бабушкиных ${past.rare.size}", ", ${past.rare.size} de la abuela") else ""} · ${t("Тайный Дед", "Abuelo Secreto")}: ${if (past.solved) Mystery.suspect(past.culprit).name.s() else "?"}",
             style = T.Body, modifier = Modifier.padding(horizontal = 18.dp, vertical = 3.dp),
         )
         Spacer(Modifier.height(24.dp))

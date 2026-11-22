@@ -36,8 +36,25 @@ class FacadeLook(
 )
 
 private val FRAME = c(0xFFE8E8EE)
-private val WARM_TOP = c(0xFFFFE199)
-private val WARM_BOT = c(0xFFF29B3B)
+private val WARM_TOP = c(0xFFF6C667)
+private val WARM_BOT = c(0xFFC81D31)
+
+enum class SceneryTarget { MOON, STARS, SNOWMAN, STREETLIGHT, DOOR }
+
+/** Detects interactive touch targets in the outdoor scenery. */
+fun sceneryHit(x: Float, y: Float): SceneryTarget? {
+    val pt = Offset(x, y)
+    val moonDist = (pt - Offset(300f, 40f)).getDistance()
+    val snowmanDist = (pt - Offset(232f, 490f)).getDistance()
+    return when {
+        moonDist < 30f -> SceneryTarget.MOON
+        snowmanDist < 36f -> SceneryTarget.SNOWMAN
+        y in 0f..70f && x < 260f -> SceneryTarget.STARS
+        Rect(10f, 400f, 52f, 480f).contains(pt) -> SceneryTarget.STREETLIGHT
+        Rect(150f, 385f, 210f, 470f).contains(pt) -> SceneryTarget.DOOR
+        else -> null
+    }
+}
 
 /** The five-storey house across the yard at dusk (or by day), with its 24 windows. */
 fun Sk.facade(look: FacadeLook) {

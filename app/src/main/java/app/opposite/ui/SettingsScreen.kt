@@ -60,12 +60,12 @@ fun SettingsScreen(settings: Settings, evening: Evening, acts: Acts) {
     Column(Modifier.fillMaxSize().background(C.bg).verticalScroll(rememberScrollState()).statusBarsPadding().navigationBarsPadding()) {
         Row(Modifier.padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("←", style = T.Title, modifier = Modifier.clip(Sh.Sm).clickable { acts.open(null) }.padding(horizontal = 10.dp, vertical = 4.dp))
-            Text(t("Настройки", "Settings"), style = T.Name)
+            Text(t("Настройки", "Ajustes"), style = T.Name)
         }
-        Eyebrow(t("Язык", "Language"), Modifier.padding(start = 18.dp, top = 4.dp))
+        Eyebrow(t("Язык", "Idioma"), Modifier.padding(start = 18.dp, top = 4.dp))
         val lang = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags().substringBefore(',').substringBefore('-')
         Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-            for ((i, pair) in listOf("" to t("Системный", "System"), "ru" to "Русский", "en" to "English").withIndex()) {
+            for ((i, pair) in listOf("" to t("Системный", "Sistema"), "es" to "Español", "ru" to "Русский", "en" to "English").withIndex()) {
                 val (tag, label) = pair
                 if (i > 0) Spacer(Modifier.width(8.dp))
                 val pick = {
@@ -76,55 +76,52 @@ fun SettingsScreen(settings: Settings, evening: Evening, acts: Acts) {
                 LangChip(label, lang == tag, Modifier.weight(1f), pick)
             }
         }
-        Item(t("Подарки за окнами", "Presents behind the windows"), t("Для себя или для близкого, как в обычном адвент-календаре", "For you or someone dear, as in an ordinary advent calendar")) { acts.open(Overlay.Gifts) }
+        Item("Mis Vales y Sorpresas", "Ver cupones de tiempo juntos y detalles caseros") { acts.open(Overlay.Vouchers) }
+        Item("Nuestro Cuaderno Compartido", "Espacio privado para metas, películas, recetas y notas") { acts.open(Overlay.OurNotebook) }
+        Item("Tutorial de Bienvenida", "Volver a ver la guía interactiva de Nuestro Refugio") {
+            acts.open(null)
+            acts.settings { it.copy(onboarded = false) }
+        }
         Item(
-            t("Напоминание на закате", "Sunset reminder"),
-            if (settings.notify) t("Включено: «в доме напротив зажглось окно»", "On: “a window lit up across the yard”") else t("Выключено", "Off"),
+            "Recordatorio al atardecer",
+            if (settings.notify) "Activado: «una ventana roja y dorada se encendió enfrente»" else "Desactivado",
         ) {
             if (!settings.notify && android.os.Build.VERSION.SDK_INT >= 33) notify.launch(Manifest.permission.POST_NOTIFICATIONS)
             else { acts.settings { it.copy(notify = !it.notify) }; Dusk.schedule(context) }
         }
         Item(
-            t("Закат", "Sunset"),
-            (if (settings.lat != null) t("По вашему месту. ", "For your place. ") else t("По часовому поясу. Тапните, чтобы считать по месту. ", "From the time zone. Tap to use your place. ")) + t("Сегодня в ${clock(evening.sunset(evening.today))}", "Today at ${clock(evening.sunset(evening.today))}"),
+            "Puesta de sol en Ica",
+            (if (settings.lat != null) "Según tu ubicación. " else "Según Ica, Perú (-14.0678, -75.7286). ") + "Hoy a las ${clock(evening.sunset(evening.today))}",
         ) { locate.launch(Manifest.permission.ACCESS_COARSE_LOCATION) }
-        Item(t("Новый сезон", "New season"), t("Новый дом-загадка, новый Тайный Дед. Нынешняя ёлка уйдёт на антресоль.", "A new mystery, a new Secret Grandfather. This tree goes to the shelf.")) { restart = !restart }
-        if (restart) Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-            fun go(from: java.time.LocalDate) {
-                val s = evening.season
-                acts.settings { st ->
-                    val shelf = if (s.litCount > 0) st.shelf + app.opposite.data.Past(s.startDate.year, s.culprit, s.lit.keys.sorted(), s.rare.sorted(), s.over) else st.shelf
-                    st.copy(shelf = shelf, season = Season.new(from).copy(gifts = if (s.litCount == 0) s.gifts else emptyMap()))
-                }
-                acts.open(null); acts.tab(Tab.HOUSE)
-            }
-            WarmButton(t("С сегодня", "From tonight")) { go(evening.today) }
-            Spacer(Modifier.width(8.dp))
-            GhostButton(t("С 1 декабря", "From Dec 1")) { go(Season.advent(evening.today.plusDays(if (evening.today.monthValue == 12) 30 else 0))) }
+        Item(
+            "Modo Creador / Preview",
+            if (settings.previewMode) "ACTIVADO (Todas las ventanas abiertas para prueba)" else "Desactivado (Solo abre a su fecha real)",
+        ) {
+            acts.store.togglePreviewMode()
+            acts.toast(if (!settings.previewMode) "Modo Preview ACTIVADO" else "Modo Preview desactivado")
         }
         Column(Modifier.padding(16.dp).fillMaxWidth().clip(Sh.Md).border(1.dp, C.line, Sh.Md).padding(14.dp)) {
-            Text(t("Как это устроено", "How it works"), style = T.Name)
+            Text("Nuestra Historia", style = T.Name.copy(color = C.warm))
             Text(
-                t("Окно загорается после настоящего заката, когда вы сделали огонёк. В каждой комнате есть улика о Тайном Деде; улики сначала расплывчатые, а точные появляются ближе к концу, так что загадка решается к 21–23 декабря. Пропущенные окна можно зажечь свечой: свеча прибавляется за огонёк в воскресенье. Всё хранится только на телефоне.",
-                    "A window lights after the real sunset, once you've done the spark. Each room holds a clue to the Secret Grandfather; clues start vague and sharpen near the end, so the mystery resolves around the 21st–23rd. Missed windows can be lit with a candle; you earn one for a Sunday spark. Everything stays on the phone."),
+                "Una aplicación creada exclusivamente por Elvis con todo su amor para Francesca (Principessa, Luna, Frambuesa, Mora).\n\nCada atardecer de diciembre, una ventana cobrará vida con un minijuego, un recuerdo y una pista para descubrir al admirador secreto. Las ventanas pasadas pueden recuperarse con las velas de los domingos.",
                 style = T.Muted, modifier = Modifier.padding(top = 6.dp),
             )
         }
-        Eyebrow(t("Сообщество", "Community"), Modifier.padding(start = 18.dp, top = 4.dp))
+        Eyebrow("Dedicatoria", Modifier.padding(start = 18.dp, top = 4.dp))
         Text(
-            t("Приложение делается вместе с теми, кто им пользуется. Всё идёт через бота StillCraft в Telegram.", "The app is made together with the people who use it. It all goes through the StillCraft bot on Telegram."),
+            "Hecho a mano en Ica, Perú para Francesca. Reescribiendo nuestra historia juntos desde el 6 de noviembre de 2026 a las 6:18 PM. Te ama tu Rata Aspirable ❤️",
             style = T.Muted, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp),
         )
         for ((icon, label, url) in listOf(
-            Triple("🐞", t("Сообщить об ошибке", "Report a bug"), Community.BUG),
-            Triple("💡", t("Предложить идею", "Suggest an idea"), Community.IDEA),
-            Triple("🔔", t("Подписаться на обновления", "Follow updates"), Community.FOLLOW),
-            Triple("💬", t("Чат StillCraft", "StillCraft chat"), Community.CHAT),
+            Triple("🐞", t("Сообщить об ошибке", "Informar de un error"), Community.BUG),
+            Triple("💡", t("Предложить идею", "Proponer una idea"), Community.IDEA),
+            Triple("🔔", t("Подписаться на обновления", "Seguir novedades"), Community.FOLLOW),
+            Triple("💬", t("Чат StillCraft", "Chat de StillCraft"), Community.CHAT),
         )) Item("$icon  $label", null) {
             runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
         }
         Spacer(Modifier.height(12.dp))
-        Text("${t("версия", "version")} ${BuildConfig.VERSION_NAME}", style = T.Muted, modifier = Modifier.padding(horizontal = 18.dp))
+        Text("${t("версия", "versión")} ${BuildConfig.VERSION_NAME}", style = T.Muted, modifier = Modifier.padding(horizontal = 18.dp))
         Spacer(Modifier.height(24.dp))
     }
 }

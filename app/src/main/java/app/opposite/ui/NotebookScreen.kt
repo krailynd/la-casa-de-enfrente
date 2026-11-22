@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -24,6 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -96,25 +99,25 @@ fun RuledText(text: String, style: TextStyle, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun NotebookScreen(evening: Evening, acts: Acts) {
+fun NotebookScreen(evening: Evening, settings: app.opposite.data.Settings, acts: Acts) {
     val s = evening.season
     val found = s.clues.count { Mystery.slots.containsKey(it) }
     val total = Mystery.slots.size
-    val can = s.lit.containsKey(24) && !s.over
+    val can = (s.lit.containsKey(24) || settings.previewMode) && !s.over
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        Header(evening, acts)
-        Eyebrow(t("Кто носит подарки?", "Who brings the presents?"), Modifier.padding(start = 18.dp, top = 6.dp))
+        Header(evening, settings, acts)
+        Eyebrow("¿Quién deja los detalles secretos?", Modifier.padding(start = 18.dp, top = 6.dp))
         NotePage {
-            RuledText(t("Дело о Тайном Деде · улик $found из $total", "The Secret Grandfather case · $found of $total clues"), T.Name.copy(color = C.paperInk, fontSize = 17.sp))
-            RuledText(t("Кто-то оставляет подарки под дверями. Никто не видел кто. Подозреваемых десять, у каждого свои привычки.", "Someone leaves presents at the doors. Nobody has seen who. There are ten suspects, each with their own habits."), T.Hand.copy(color = c(0xFF8B5A3A)))
+            RuledText("El caso del Admirador Secreto de Principessa · $found de $total pistas", T.Name.copy(color = C.paperInk, fontSize = 17.sp))
+            RuledText("Alguien deja notas, melodías, frambuesas y pequeños detalles en las ventanas para Francesca. Hay diez sospechosos en el vecindario.", T.Hand.copy(color = c(0xFF8B5A3A)))
             for (d in Mystery.slots.keys.sorted()) {
                 val clue = if (d in s.clues) s.clue(d) else null
                 if (clue != null) {
-                    val tag = clue.attr?.let { t(it.ru, it.en) } ?: t("алиби", "alibi")
+                    val tag = clue.attr?.let { t(it.ru, it.en) } ?: "coartada"
                     RuledText("$d · $tag", T.Muted.copy(color = C.paperMuted, fontSize = 12.sp))
-                    RuledText(clue.text.s(), T.Hand)
+                    RuledText(Mystery.cleanLocalizedText(clue.text.s()), T.Hand)
                 } else RuledText(
-                    "$d.  " + if (s.lit.containsKey(d)) t("окно горит, но улику вы ещё не нашли", "the window is lit, but you haven't found the clue yet") else "· · ·",
+                    "$d.  " + if (s.lit.containsKey(d)) "la ventana está encendida, pero aún no has hallado la pista" else "· · ·",
                     T.Hand.copy(color = c(0xFFB6A993)),
                     if (s.lit.containsKey(d)) Modifier.clickable { acts.open(Overlay.Room(d)) } else Modifier,
                 )
@@ -122,8 +125,8 @@ fun NotebookScreen(evening: Evening, acts: Acts) {
         }
         val left = Mystery.suspects.count { it.id !in s.struck }
         NotePage {
-            RuledText(t("Подозреваемые · осталось $left", "Suspects · $left left"), T.Name.copy(color = C.paperInk, fontSize = 17.sp))
-            RuledText(t("Тапните, чтобы открыть досье и сверить с уликами.", "Tap to open a file and check it against the clues."), T.Hand.copy(fontSize = 19.sp))
+            RuledText("Sospechosos · quedan $left", T.Name.copy(color = C.paperInk, fontSize = 17.sp))
+            RuledText("Toca para abrir un expediente y contrastarlo con las pistas.", T.Hand.copy(fontSize = 19.sp))
             Column(Modifier.padding(top = 8.dp)) {
                 for (row in Mystery.suspects.chunked(5)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(bottom = 6.dp)) {
@@ -134,22 +137,58 @@ fun NotebookScreen(evening: Evening, acts: Acts) {
             val guess = s.guess?.let { Mystery.suspect(it) }
             RuledText(
                 when {
-                    s.over -> t("Дело закрыто: ${Mystery.suspect(s.culprit).name.ru}.", "Case closed: ${Mystery.suspect(s.culprit).name.en}.")
-                    can && guess != null -> t("Подозреваемый: ${guess.name.ru}.", "Suspect: ${guess.name.en}.")
-                    can -> t("Окно 24 горит. Откройте досье и выберите, кого подозреваете.", "Window 24 is lit. Open the files and choose whom you suspect.")
-                    else -> t("Назвать можно будет 24-го, когда загорится последнее окно.", "You can name them on the 24th, when the last window lights.")
+                    s.over -> "Caso cerrado: ${Mystery.suspect(s.culprit).name.en}."
+                    can && guess != null -> "Sospechoso señalado: ${guess.name.en}."
+                    can -> "La ventana 24 está encendida. Abre los expedientes y señala a quién sospechas."
+                    else -> "Podrás nombrarlo el día 24, cuando se encienda la última ventana."
                 },
                 T.Hand.copy(fontSize = 20.sp),
             )
             if (can) {
-                WarmButton(t("Назвать", "Name them"), enabled = guess != null) {
+                WarmButton("Acusar", enabled = guess != null) {
                     val id = guess!!.id
                     acts.season { Rules.accuse(it, id, System.currentTimeMillis()) }
                     if (id == s.culprit) acts.open(Overlay.Finale) else acts.sheet(Sheet.Wrong(id))
                 }
             }
-            if (s.over) { WarmButton(t("Финал", "The ending")) { acts.open(Overlay.Finale) } }
+            if (s.over) { WarmButton("Ver el desenlace") { acts.open(Overlay.Finale) } }
         }
+
+        Spacer(Modifier.height(16.dp))
+
+        // ENTRADA A "NUESTRO CUADERNO" (ESPACIO COMPARTIDO DE PAREJA)
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+                .clip(Sh.Md)
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(Color(0xFF3B101D), Color(0xFF220A13))
+                    )
+                )
+                .border(1.5.dp, C.warm, Sh.Md)
+                .clickable { acts.open(Overlay.OurNotebook) }
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("📖", fontSize = 36.sp)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Entrar a Nuestro Cuaderno ✨",
+                        style = T.Name.copy(color = C.warm, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        "Espacio privado para nuestras metas, películas, recetas y notas juntos.",
+                        style = T.Body.copy(color = C.ink, fontSize = 12.sp)
+                    )
+                }
+                Text("→", style = T.Title.copy(color = C.warm, fontSize = 22.sp))
+            }
+        }
+
         Spacer(Modifier.height(20.dp))
     }
 }

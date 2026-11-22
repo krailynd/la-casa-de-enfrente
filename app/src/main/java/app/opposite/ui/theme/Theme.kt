@@ -15,24 +15,28 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import app.opposite.R
 
-/** A winter evening: deep blue night, warm window light, the cream of a school notebook. */
+/**
+ * Romantic Nocturnal Palette for Francesca.
+ * Dominated by her favorite color RED (wine, ruby crimson, raspberry, warm parchment, and candle gold).
+ */
 object C {
-    val bg = Color(0xFF0F1A33)
-    val bg2 = Color(0xFF16223F)
-    val card = Color(0xFF1C2C52)
-    val line = Color(0xFF2B3F6C)
-    val ink = Color(0xFFE9E3D3)
-    val dim = Color(0xFF9AA6C2)
-    val faint = Color(0xFF6E7C9E)
-    val warm = Color(0xFFFFCB6B)
+    val bg = Color(0xFF160B10)           // Deep warm midnight burgundy
+    val bg2 = Color(0xFF241118)          // Surface wine
+    val card = Color(0xFF2E1620)         // Slightly elevated wine card
+    val line = Color(0xFF4A1F2D)         // Subtle wine border
+    val ink = Color(0xFFF7EFE2)          // Warm cream text
+    val dim = Color(0xFFB89A98)          // Muted warm rose
+    val faint = Color(0xFF7D5F64)        // Faint border / inactive
+    val warm = Color(0xFFF6C667)         // Candlelight gold & stars
     val onWarm = Color(0xFF2A1A08)
-    val frost = Color(0xFF9FC0EF)
-    val paper = Color(0xFFF4ECD9)
-    val paperLine = Color(0xFFCDD9E6)
-    val paperInk = Color(0xFF3A2F25)
-    val paperMuted = Color(0xFF8B7A66)
-    val red = Color(0xFFC8483C)
-    val green = Color(0xFF2D6A3A)
+    val frost = Color(0xFFE2C2C6)        // Frost with gentle rose hue
+    val paper = Color(0xFFF7EFE2)        // Smooth warm parchment
+    val paperLine = Color(0xFFE5D7C5)    // Notebook faint grid line
+    val paperInk = Color(0xFF2C1810)     // Warm dark espresso ink
+    val paperMuted = Color(0xFF8B6A5B)   // Soft sepia ink
+    val red = Color(0xFFC81D31)          // Francesca's Ruby Crimson Primary
+    val raspberry = Color(0xFFE04F5F)    // Raspberry glow
+    val green = Color(0xFF387B4E)        // Soft emerald for matches
     val clue = Color(0xFFFFF4C9)
 }
 
@@ -42,7 +46,6 @@ val Lora = FontFamily(
     Font(R.font.lora_italic, FontWeight.Normal, FontStyle.Italic),
 )
 
-/** Handwriting: tasks, clues, the notebook. */
 val Hand = FontFamily(Font(R.font.caveat, FontWeight.Normal))
 
 object Sh {
@@ -67,7 +70,17 @@ object T {
 @Composable
 fun OppositeTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = darkColorScheme(primary = C.warm, onPrimary = C.onWarm, background = C.bg, surface = C.bg2, onSurface = C.ink, onBackground = C.ink, outline = C.line),
+        colorScheme = darkColorScheme(
+            primary = C.red,
+            onPrimary = Color.White,
+            secondary = C.warm,
+            onSecondary = C.onWarm,
+            background = C.bg,
+            surface = C.bg2,
+            onSurface = C.ink,
+            onBackground = C.ink,
+            outline = C.line,
+        ),
         typography = MaterialTheme.typography.copy(bodyLarge = T.Body, bodyMedium = T.Body, labelLarge = T.Button, titleLarge = T.Title),
         content = content,
     )

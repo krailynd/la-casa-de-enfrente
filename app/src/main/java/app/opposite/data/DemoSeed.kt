@@ -18,10 +18,10 @@ object DemoSeed {
             rare = setOf(2, 7),
             candles = 1,
             gifts = mapOf(
-                3 to Gift("Шоколадка в коробочке №3", "treat"),
-                10 to Gift("Загляни в карман зимнего пальто", "thing"),
-                14 to Gift("Вечером — каток, вдвоём", "deed"),
-                24 to Gift("Письмо под подушкой", "note"),
+                3 to Gift("Chocolatina en la cajita n.º 3", "treat"),
+                10 to Gift("Mira en el bolsillo del abrigo de invierno", "thing"),
+                14 to Gift("Por la tarde — pista de patinaje, juntos", "deed"),
+                24 to Gift("Una carta bajo la almohada", "note"),
             ),
             giftsFrom = "",
         )

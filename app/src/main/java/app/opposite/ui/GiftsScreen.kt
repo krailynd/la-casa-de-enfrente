@@ -50,27 +50,27 @@ fun GiftsScreen(evening: Evening, acts: Acts) {
     Column(Modifier.fillMaxSize().background(C.bg).statusBarsPadding().navigationBarsPadding().imePadding()) {
         Row(Modifier.padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("←", style = T.Title, modifier = Modifier.clip(Sh.Sm).clickable { acts.open(null) }.padding(horizontal = 10.dp, vertical = 4.dp))
-            Text(t("Подарки за окнами", "Presents behind the windows"), style = T.Name)
+            Text(t("Подарки за окнами", "Regalos tras las ventanas"), style = T.Name)
         }
         LazyColumn(Modifier.weight(1f)) {
             item {
                 Text(
                     t("Как в обычном адвент-календаре: за окном можно спрятать что-то настоящее. Шоколадку в коробочке №7, записку, «загляни в карман пальто», дело на вечер. Подарок видно, только когда окно загорится.",
-                        "As in an ordinary advent calendar, something real can wait behind a window: a chocolate in box 7, a note, “look in your coat pocket”, something to do together. It shows only when the window lights."),
+                        "Como en un calendario de adviento tradicional, algo real puede aguardar tras una ventana: un chocolate en la cajita 7, una nota, «mira en el bolsillo de tu abrigo», o un plan para compartir. Solo se mostrará cuando la ventana se ilumine."),
                     style = T.Muted, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp),
                 )
                 Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Chip(t("Для себя", "For me"), !s.giftsSealed, Modifier.weight(1f)) { acts.season { it.copy(giftsSealed = false) }; unlocked = true }
-                    Chip(t("Готовлю для другого", "Making it for someone"), s.giftsSealed, Modifier.weight(1f)) { acts.season { it.copy(giftsSealed = true) } }
+                    Chip(t("Для себя", "Para mí"), !s.giftsSealed, Modifier.weight(1f)) { acts.season { it.copy(giftsSealed = false) }; unlocked = true }
+                    Chip(t("Готовлю для другого", "Preparándolo para alguien"), s.giftsSealed, Modifier.weight(1f)) { acts.season { it.copy(giftsSealed = true) } }
                 }
                 if (s.giftsSealed) {
-                    Field(s.giftsFrom, t("От кого (увидит получатель)", "From (the recipient will see it)"), Modifier.padding(horizontal = 16.dp)) { v -> acts.season { it.copy(giftsFrom = v.take(40)) } }
+                    Field(s.giftsFrom, t("От кого (увидит получатель)", "De parte de (lo verá quien reciba)"), Modifier.padding(horizontal = 16.dp)) { v -> acts.season { it.copy(giftsFrom = v.take(40)) } }
                     if (!unlocked) Column(Modifier.padding(16.dp).fillMaxWidth().clip(Sh.Md).border(1.dp, C.line, Sh.Md).padding(14.dp)) {
-                        Text(t("Список спрятан, чтобы никто не подсмотрел заранее. Подарков: ${s.gifts.size}.", "The list is hidden so nobody peeks ahead. Presents: ${s.gifts.size}."), style = T.Body)
+                        Text(t("Список спрятан, чтобы никто не подсмотрел заранее. Подарков: ${s.gifts.size}.", "La lista está oculta para que nadie espíe antes de tiempo. Regalos: ${s.gifts.size}."), style = T.Body)
                         Spacer(Modifier.height(10.dp))
-                        if (!confirm) GhostButton(t("Я готовлю подарки — открыть", "I'm the one preparing — open")) { confirm = true }
+                        if (!confirm) GhostButton(t("Я готовлю подарки — открыть", "Yo preparo los regalos — abrir")) { confirm = true }
                         else Row {
-                            WarmButton(t("Да, показать", "Yes, show")) { unlocked = true }
+                            WarmButton(t("Да, показать", "Sí, mostrar")) { unlocked = true }
                             Spacer(Modifier.width(8.dp))
                             GhostButton(t("Не надо", "No")) { confirm = false }
                         }
@@ -92,11 +92,11 @@ private fun GiftRow(d: Int, s: Season, evening: Evening, acts: Acts) {
             Text("$d", style = T.Count, modifier = Modifier.width(34.dp))
             Column(Modifier.weight(1f)) {
                 Text(dateText(s.date(d)), style = T.Body)
-                Text("${t("окно", "window")}: ${r.name.s()}${if (s.lit.containsKey(d)) t(" · уже открыто", " · opened") else ""}", style = T.Muted)
+                Text("${t("окно", "ventana")}: ${r.name.s()}${if (s.lit.containsKey(d)) t(" · уже открыто", " · abierta") else ""}", style = T.Muted)
             }
             if (g != null) Text("✕", style = T.Body.copy(color = C.dim), modifier = Modifier.clip(Sh.Sm).clickable { acts.season { it.copy(gifts = it.gifts - d) } }.padding(8.dp))
         }
-        Field(g?.text ?: "", t("Что за этим окном? Например: «шоколадка в коробочке №$d»", "What's behind it? E.g. “a chocolate in box $d”"), Modifier.padding(top = 8.dp)) { v ->
+        Field(g?.text ?: "", t("Что за этим окном? Например: «шоколадка в коробочке №$d»", "¿Qué hay detrás? Ej.: «un chocolate en la caja n.º $d»"), Modifier.padding(top = 8.dp)) { v ->
             acts.season { it.copy(gifts = if (v.isBlank()) it.gifts - d else it.gifts + (d to Gift(v.take(160), it.gifts[d]?.kind ?: "thing"))) }
         }
         if (g != null) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {

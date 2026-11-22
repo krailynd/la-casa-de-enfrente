@@ -11,26 +11,38 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.opposite.data.Settings
+import app.opposite.domain.AdventData
+import app.opposite.domain.CoupleStory
 import app.opposite.domain.Evening
-import app.opposite.domain.House
 import app.opposite.domain.Season
 import app.opposite.domain.WinState
 import app.opposite.ui.art.FacadeLook
 import app.opposite.ui.art.HOUSE_H
 import app.opposite.ui.art.HOUSE_W
+import app.opposite.ui.art.SceneryTarget
 import app.opposite.ui.art.facade
 import app.opposite.ui.art.facadeHit
+import app.opposite.ui.art.sceneryHit
 import app.opposite.ui.theme.C
 import app.opposite.ui.theme.Sh
 import app.opposite.ui.theme.T
@@ -41,7 +53,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun dateText(d: LocalDate): String = if (LocalRu.current) d.format(DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("ru"))) else d.format(DateTimeFormatter.ofPattern("MMMM d", Locale.ENGLISH))
+fun dateText(d: LocalDate): String = if (LocalRu.current) d.format(DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("ru"))) else d.format(DateTimeFormatter.ofPattern("d 'de' MMMM", Locale.forLanguageTag("es")))
 
 fun clock(ms: Long): String = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))
 
@@ -51,15 +63,50 @@ fun plural(n: Int, one: String, few: String, many: String): String {
 }
 
 @Composable
-fun Header(evening: Evening, acts: Acts) {
+fun Header(evening: Evening, settings: Settings, acts: Acts) {
+    val context = LocalContext.current
     val s = evening.season
-    Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 6.dp), verticalAlignment = Alignment.Bottom) {
+    val time by rememberSeconds()
+    val liveDuration = remember(time) { CoupleStory.calculateDuration() }
+
+    val musicOn = SoundManager.isPlaying()
+
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
         Column(Modifier.weight(1f)) {
-            Text(t("Дом напротив", "The House Opposite"), style = T.Title)
-            Text("${dateText(evening.today)} · ${t("закат в", "sunset")} ${clock(evening.sunset(evening.today))}", style = T.Muted)
+            Text("Nuestro Refugio", style = T.Title.copy(color = C.ink, fontSize = 22.sp))
+            Text(
+                liveDuration.formattedSummary,
+                style = T.Eyebrow.copy(color = C.raspberry, fontSize = 11.sp, letterSpacing = 0.05.sp, fontWeight = FontWeight.Bold),
+            )
+            Text(
+                liveDuration.subtitle,
+                style = T.Muted.copy(color = C.dim, fontSize = 10.sp),
+            )
         }
-        Text("${s.litCount} ${t("из", "of")} ${Season.DAYS}", style = T.Count, modifier = Modifier.padding(end = 6.dp))
-        Text("⚙", style = T.Title.copy(color = C.dim), modifier = Modifier.clip(Sh.Sm).clickable { acts.open(Overlay.Settings) }.padding(8.dp))
+
+        // Music Toggle
+        Text(
+            if (musicOn) "🎵" else "🔇",
+            style = T.Title.copy(fontSize = 18.sp),
+            modifier = Modifier
+                .clip(Sh.Sm)
+                .clickable {
+                    val active = SoundManager.toggle(context)
+                    acts.store.toggleMusic()
+                    acts.toast(if (active) "Música suave de fondo activada 🍃🎶" else "Música silenciada")
+                }
+                .padding(6.dp)
+        )
+
+        Spacer(Modifier.width(4.dp))
+        Text("${s.litCount} de ${Season.DAYS}", style = T.Count.copy(color = C.warm), modifier = Modifier.padding(end = 4.dp))
+        Text("⚙", style = T.Title.copy(color = C.dim), modifier = Modifier.clip(Sh.Sm).clickable { acts.open(Overlay.Settings) }.padding(6.dp))
     }
 }
 
@@ -69,106 +116,219 @@ fun HouseScreen(evening: Evening, settings: Settings, acts: Acts, igniting: Int,
     val s = evening.season
     val ru = LocalRu.current
     val numbers = androidx.compose.ui.text.rememberTextMeasurer()
+
+    var moonTaps by remember { mutableIntStateOf(0) }
+    var snowmanToggle by remember { mutableStateOf(false) }
+    var showCreatorMirror by remember { mutableStateOf(false) }
+
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        Header(evening, acts)
+        Header(evening, settings, acts)
+
         Box {
-            Picture(HOUSE_W, HOUSE_H, onTap = { x, y -> facadeHit(x, y)?.let { tapWindow(it, evening, acts, ru) } }) {
-                facade(FacadeLook(dusk = evening.dusk, state = evening::state, hasGift = { s.gifts.containsKey(it) }, t = time, igniting = igniting, ignite = ignite, numbers = numbers))
+            Picture(
+                HOUSE_W,
+                HOUSE_H,
+                onTap = { x, y ->
+                    val hitWindow = facadeHit(x, y)
+                    if (hitWindow != null) {
+                        tapWindow(hitWindow, evening, acts, ru)
+                    } else {
+                        when (sceneryHit(x, y)) {
+                            SceneryTarget.MOON -> {
+                                moonTaps++
+                                if (moonTaps >= 7) {
+                                    moonTaps = 0
+                                    showCreatorMirror = true
+                                } else {
+                                    acts.toast("Tú eres mi Luna favorita, Principessa 🌙")
+                                }
+                            }
+                            SceneryTarget.STARS -> {
+                                acts.toast("Un deseo bajo las estrellas para nosotros ✨")
+                            }
+                            SceneryTarget.SNOWMAN -> {
+                                snowmanToggle = !snowmanToggle
+                                acts.toast(if (snowmanToggle) "Modo rata activado 🐀✨" else "El Sol manda saludos ☀️")
+                            }
+                            SceneryTarget.STREETLIGHT -> {
+                                acts.toast("Luz dorada para alumbrar tu camino, mi niña 💡")
+                            }
+                            SceneryTarget.DOOR -> {
+                                acts.toast("Toc, toc... Solo se abre una ventana por noche, Mio Principessa 🚪❤️")
+                            }
+                            null -> {}
+                        }
+                    }
+                }
+            ) {
+                facade(
+                    FacadeLook(
+                        dusk = evening.dusk,
+                        state = evening::state,
+                        hasGift = { s.gifts.containsKey(it) },
+                        t = time,
+                        igniting = igniting,
+                        ignite = ignite,
+                        numbers = numbers,
+                    )
+                )
             }
             Snow(Modifier.matchParentSize())
         }
+
+        // Preview Mode indicator if active
+        if (settings.previewMode) {
+            Box(
+                Modifier
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .fillMaxWidth()
+                    .clip(Sh.Sm)
+                    .background(C.red.copy(alpha = 0.2f))
+                    .border(1.dp, C.red, Sh.Sm)
+                    .padding(8.dp)
+            ) {
+                Text(
+                    "🔧 MODO PREVIEW ACTIVO: Puedes abrir y probar cualquier ventana y minijuego sin esperar a diciembre.",
+                    style = T.Eyebrow.copy(color = C.warm, fontSize = 11.sp),
+                )
+            }
+        }
+
         TodayCard(evening, acts)
-        GiftsLine(s, acts)
-        Spacer(Modifier.height(20.dp))
+
+        // Vouchers Button
+        VouchersBanner(acts)
+
+        // Bonus Chest on Dec 27 (or in preview mode)
+        val isDec27 = (evening.today.monthValue == 12 && evening.today.dayOfMonth >= 27) || settings.previewMode
+        if (isDec27) {
+            AnniversaryBanner(acts)
+        }
+
+        Spacer(Modifier.height(24.dp))
+    }
+
+    if (showCreatorMirror) {
+        CreatorMirrorDialog(
+            settings = settings,
+            acts = acts,
+            onDismiss = { showCreatorMirror = false }
+        )
+    }
+}
+
+@Composable
+private fun VouchersBanner(acts: Acts) {
+    Box(
+        Modifier
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .fillMaxWidth()
+            .clip(Sh.Lg)
+            .background(C.card)
+            .border(1.dp, C.line, Sh.Lg)
+            .clickable { acts.open(Overlay.Vouchers) }
+            .padding(14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("🎁", fontSize = 28.sp, modifier = Modifier.padding(end = 12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Mis Vales y Sorpresas", style = T.Name.copy(color = C.ink, fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                Text("Cupones de tiempo juntos, cartas y detalles caseros", style = T.Muted.copy(color = C.dim, fontSize = 12.sp))
+            }
+            Text("›", style = T.Title.copy(color = C.dim, fontSize = 20.sp))
+        }
+    }
+}
+
+@Composable
+private fun AnniversaryBanner(acts: Acts) {
+    Box(
+        Modifier
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .fillMaxWidth()
+            .clip(Sh.Lg)
+            .background(Brush.linearGradient(listOf(Color(0xFF4A1F2D), Color(0xFF241118))))
+            .border(1.5.dp, C.warm, Sh.Lg)
+            .clickable { acts.open(Overlay.Minigame(25)) }
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("👑", fontSize = 32.sp, modifier = Modifier.padding(end = 12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Nuestro Nuevo Comienzo · Carta Especial", style = T.Name.copy(color = C.warm, fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                Text("Segunda oportunidad desde el 06/11 · Toca para abrir ❤️", style = T.Body.copy(color = C.ink, fontSize = 12.sp))
+            }
+        }
     }
 }
 
 private fun tapWindow(d: Int, evening: Evening, acts: Acts, ru: Boolean) {
     val s = evening.season
     if (s.over && !s.lit.containsKey(d)) return
+
     when (evening.state(d)) {
         WinState.LIT -> acts.open(Overlay.Room(d))
         WinState.FUTURE -> {
             val n = d - evening.day
-            acts.toast(if (evening.beforeStart && d == 1) (if (ru) "Первое окно загорится ${s.startDate.dayOfMonth} ${monthRu(s.startDate)}." else "The first window lights on ${s.startDate.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${s.startDate.dayOfMonth}.")
-            else if (ru) "Окно $d откроется через $n ${plural(n, "вечер", "вечера", "вечеров")}." else "Window $d opens in $n ${if (n == 1) "evening" else "evenings"}.")
+            acts.toast(
+                if (evening.beforeStart && d == 1) "La primera ventana se encenderá el 1 de diciembre al caer el atardecer."
+                else "La ventana $d se abrirá en $n ${if (n == 1) "noche" else "noches"}, Principessa."
+            )
         }
-        WinState.WAITING_DUSK -> acts.toast(if (ru) "Ещё светло. Окно зажжётся после заката, в ${clock(evening.sunset(evening.today))}." else "It's still light. The window lights after sunset, at ${clock(evening.sunset(evening.today))}.")
+        WinState.WAITING_DUSK -> acts.toast("Aún hay luz en Ica. La ventana se encenderá tras el atardecer, a las ${clock(evening.sunset(evening.today))}.")
         WinState.TODAY -> acts.sheet(Sheet.Task(d))
         WinState.MISSED -> acts.sheet(Sheet.Missed(d))
     }
 }
 
-fun monthRu(d: LocalDate) = listOf("января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря")[d.monthValue - 1]
-
 @Composable
 private fun TodayCard(evening: Evening, acts: Acts) {
     val s = evening.season
-    val d = evening.day
-    val box = Modifier.padding(horizontal = 16.dp, vertical = 10.dp).fillMaxWidth().clip(Sh.Lg)
-        .background(Brush.linearGradient(listOf(C.card, C.bg2))).border(1.dp, C.line, Sh.Lg).padding(16.dp)
+    val d = if (evening.previewMode && evening.day < 1) 1 else evening.day
+    val box = Modifier
+        .padding(horizontal = 16.dp, vertical = 8.dp)
+        .fillMaxWidth()
+        .clip(Sh.Lg)
+        .background(Brush.linearGradient(listOf(C.card, C.bg2)))
+        .border(1.dp, C.line, Sh.Lg)
+        .padding(16.dp)
+
     Column(box) {
         when {
             s.over -> {
-                Eyebrow(t("Сезон закрыт", "Season closed"))
-                Text(t("Тайный Дед найден. Ёлка ждёт на антресоли, а дом — следующего декабря.", "The Secret Grandfather is found. The tree waits on the shelf, and the house waits for next December."), style = T.Body, modifier = Modifier.padding(top = 6.dp))
+                Eyebrow("Misterio Resuelto")
+                Text("¡Descubriste a tu admirador secreto! El Músico de Medianoche (Elvis) siempre pensó en ti.", style = T.Body, modifier = Modifier.padding(top = 6.dp))
                 Spacer(Modifier.height(10.dp))
-                WarmButton(t("Финал ещё раз", "See the ending again")) { acts.open(Overlay.Finale) }
+                WarmButton("Ver desenlace de nuevo") { acts.open(Overlay.Finale) }
             }
             evening.beforeStart -> {
                 val n = 1 - d
-                Eyebrow(t("До первого окна", "Until the first window"))
-                Text(t("${n} ${plural(n, "день", "дня", "дней")}. Пока в доме напротив тихо: шторы задёрнуты, кто-то пьёт чай.", "$n ${if (n == 1) "day" else "days"}. The house opposite is quiet for now: curtains drawn, someone having tea."), style = T.Body, modifier = Modifier.padding(top = 6.dp))
-                Text(t("Пока можно положить подарки за окна.", "Meanwhile you can put presents behind the windows."), style = T.Muted, modifier = Modifier.padding(top = 6.dp))
+                Eyebrow("Falta poco para iniciar")
+                Text("$n días para encender la primera ventana. El edificio espera por ti con velitas listas.", style = T.Body, modifier = Modifier.padding(top = 6.dp))
             }
             d > Season.DAYS -> {
-                Eyebrow(t("Все вечера позади", "All evenings are behind"))
-                Text(t("Двадцать четвёртое окно горит. Загляните в блокнот: пора назвать Тайного Деда.", "The twenty-fourth window is lit. Open the notebook: it's time to name the Secret Grandfather."), style = T.Body, modifier = Modifier.padding(top = 6.dp))
+                Eyebrow("Nochebuena cumplida")
+                Text("Todas las ventanas están encendidas. Es hora de hacer tu acusación final en el cuaderno.", style = T.Body, modifier = Modifier.padding(top = 6.dp))
             }
             s.lit.containsKey(d) -> {
-                Eyebrow(t("Сегодня", "Tonight"))
-                Text(t("Окно $d горит. ${House.resident(d).name.ru} уже знает, что вы заходили.", "Window $d is lit. ${House.resident(d).name.en} knows you dropped by."), style = T.Body, modifier = Modifier.padding(top = 6.dp))
-                Text(t("Следующее окно завтра, после заката.", "The next one tomorrow, after sunset."), style = T.Hand.copy(color = C.warm, fontSize = 20.sp_), modifier = Modifier.padding(top = 6.dp))
-            }
-            !evening.dusk -> {
-                Eyebrow(t("Сегодня · окно $d", "Tonight · window $d"))
-                Text(t("Дом ещё серый. Окно зажжётся после заката, в ${clock(evening.sunset(evening.today))}.", "The house is still grey. The window lights after sunset, at ${clock(evening.sunset(evening.today))}."), style = T.Body, modifier = Modifier.padding(top = 6.dp))
-                Text(House.resident(d).task.s(), style = T.Hand.copy(color = C.warm, fontSize = 20.sp_), modifier = Modifier.padding(top = 8.dp))
+                Eyebrow("Esta noche")
+                val resident = AdventData.get(d)
+                Text("La ventana $d está encendida. La historia de hoy te espera.", style = T.Body, modifier = Modifier.padding(top = 6.dp))
+                Spacer(Modifier.height(10.dp))
+                WarmButton("Entrar a la habitación $d") { acts.open(Overlay.Room(d)) }
             }
             else -> {
-                Eyebrow(t("Смеркается · окно $d", "Dusk · window $d"))
-                Text(t("В одном окне кто-то включил свет. Тапните по мерцающему окну.", "Someone just switched on a light. Tap the flickering window."), style = T.Body, modifier = Modifier.padding(top = 6.dp))
-                Spacer(Modifier.height(10.dp))
-                WarmButton(t("Огонёк на сегодня", "Tonight's spark")) { acts.sheet(Sheet.Task(d)) }
+                val state = evening.state(d)
+                if (state == WinState.WAITING_DUSK) {
+                    Eyebrow("Atardeciendo en Ica")
+                    Text("La ventana $d cobrará vida en cuanto caiga el sol, a las ${clock(evening.sunset(evening.today))}.", style = T.Body, modifier = Modifier.padding(top = 6.dp))
+                } else {
+                    Eyebrow("Ventana de hoy lista")
+                    Text("Hay una chispa y una nueva historia esperando por ti detrás de la ventana $d.", style = T.Body, modifier = Modifier.padding(top = 6.dp))
+                    Spacer(Modifier.height(10.dp))
+                    WarmButton("Abrir ventana $d") { acts.sheet(Sheet.Task(d)) }
+                }
             }
         }
-        val missed = evening.missed
-        if (missed > 0 && !s.over) Text(
-            t("Тёмных окон позади: $missed. Свечей: ${s.candles}.", "Dark windows behind: $missed. Candles: ${s.candles}."),
-            style = T.Hand.copy(color = C.frost, fontSize = 19.sp_), modifier = Modifier.padding(top = 8.dp),
-        )
     }
 }
-
-@Composable
-private fun GiftsLine(s: Season, acts: Acts) {
-    val n = s.gifts.size
-    Row(
-        Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(Sh.Md).border(1.dp, C.line, Sh.Md).clickable { acts.open(Overlay.Gifts) }.padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("🎁", style = T.Body)
-        Column(Modifier.weight(1f).padding(start = 10.dp)) {
-            Text(t("Подарки за окнами", "Presents behind the windows"), style = T.Body)
-            Text(
-                if (n == 0) t("Как в обычном адвент-календаре: шоколадка, записка, «загляни в карман». Для себя или для близкого.", "As in an ordinary advent calendar: a chocolate, a note, “look in your pocket”. For you or for someone dear.")
-                else if (s.giftsSealed) t("$n ${plural(n, "подарок спрятан", "подарка спрятано", "подарков спрятано")}${if (s.giftsFrom.isNotBlank()) " · от: ${s.giftsFrom}" else ""}", "$n hidden${if (s.giftsFrom.isNotBlank()) " · from ${s.giftsFrom}" else ""}")
-                else t("$n ${plural(n, "окно", "окна", "окон")} с подарком", "$n ${if (n == 1) "window" else "windows"} with a present"),
-                style = T.Muted,
-            )
-        }
-        Text("›", style = T.Title.copy(color = C.dim))
-    }
-}
-
-private val Int.sp_ get() = androidx.compose.ui.unit.TextUnit(this.toFloat(), androidx.compose.ui.unit.TextUnitType.Sp)

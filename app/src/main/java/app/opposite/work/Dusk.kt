@@ -41,14 +41,14 @@ class Dusk : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         val nm = context.getSystemService(NotificationManager::class.java)
         val ru = context.resources.configuration.locales[0].language == "ru"
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, if (ru) "Окно на закате" else "Window at sunset", NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL, if (ru) "Окно на закате" else "Ventana al atardecer", NotificationManager.IMPORTANCE_DEFAULT))
         val r = House.resident(d)
         val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notify)
-            .setContentTitle(if (ru) "В доме напротив зажглось окно" else "A window lit up across the yard")
-            .setContentText(if (ru) "Окно $d. Огонёк: ${r.task.ru}" else "Window $d. Tonight's spark: ${r.task.en}")
-            .setStyle(NotificationCompat.BigTextStyle().bigText(if (ru) "Окно $d. Огонёк: ${r.task.ru}" else "Window $d. Tonight's spark: ${r.task.en}"))
+            .setContentTitle(if (ru) "В доме напротив зажглось окно" else "Una ventana se encendió enfrente")
+            .setContentText(if (ru) "Окно $d. Огонёк: ${r.task.ru}" else "Ventana $d. Chispa de hoy: ${r.task.en}")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(if (ru) "Окно $d. Огонёк: ${r.task.ru}" else "Ventana $d. Chispa de hoy: ${r.task.en}"))
             .setContentIntent(open)
             .setAutoCancel(true)
             .build()

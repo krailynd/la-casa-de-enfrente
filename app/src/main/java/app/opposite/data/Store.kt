@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** A finished season kept on the shelf: its tree and who it was. */
 data class Past(val year: Int, val culprit: String, val ornaments: List<Int>, val rare: List<Int>, val solved: Boolean)
 
 data class Settings(
@@ -18,11 +17,14 @@ data class Settings(
     val lon: Double? = null,
     val notify: Boolean = true,
     val season: Season? = null,
+    val previewSeason: Season? = null,
     val shelf: List<Past> = emptyList(),
+    val previewMode: Boolean = false,
+    val redeemedVouchers: Map<String, Long> = emptyMap(),
+    val musicEnabled: Boolean = true,
 )
 
-/** Everything lives in one small JSON document; writes are rare (a few a day). */
-class Store(context: Context) {
+class Store(private val context: Context) {
     private val prefs = context.getSharedPreferences("opposite", Context.MODE_PRIVATE)
     private val _state = MutableStateFlow(read())
     val state: StateFlow<Settings> = _state
@@ -34,7 +36,55 @@ class Store(context: Context) {
         prefs.edit().putString("state", write(next).toString()).apply()
     }
 
-    fun season(change: (Season) -> Season) = update { s -> s.season?.let { s.copy(season = change(it)) } ?: s }
+    fun season(change: (Season) -> Season) = update { s ->
+        if (s.previewMode && s.previewSeason != null) {
+            s.copy(previewSeason = change(s.previewSeason))
+        } else {
+            s.season?.let { s.copy(season = change(it)) } ?: s
+        }
+    }
+
+    fun redeemVoucher(id: String, time: Long) = update { s ->
+        s.copy(redeemedVouchers = s.redeemedVouchers + (id to time))
+    }
+
+    fun togglePreviewMode() = update { s ->
+        val newMode = !s.previewMode
+        if (newMode) {
+            // Activar modo sandbox: clonar season real en previewSeason con ventanas accesibles
+            val sandbox = s.season?.copy()
+            s.copy(previewMode = true, previewSeason = sandbox)
+        } else {
+            // Salir de modo preview: descartar sandbox sin tocar season real
+            s.copy(previewMode = false, previewSeason = null)
+        }
+    }
+
+    fun resetAllProgressForFrancesca() = update { s ->
+        try {
+            java.io.File(context.filesDir, "letters_cache.json").delete()
+            java.io.File(context.filesDir, "progress_cache.json").delete()
+        } catch (_: Exception) {}
+
+        val cleanSeason = s.season?.copy(
+            lit = emptyMap(),
+            clues = emptySet(),
+            rare = emptySet(),
+            struck = emptySet(),
+            guess = null,
+            tries = 0,
+            solved = null,
+        )
+        s.copy(
+            onboarded = false,
+            previewMode = false,
+            previewSeason = null,
+            redeemedVouchers = emptyMap(),
+            season = cleanSeason,
+        )
+    }
+
+    fun toggleMusic() = update { s -> s.copy(musicEnabled = !s.musicEnabled) }
 
     private fun read(): Settings = try {
         prefs.getString("state", null)?.let { parse(JSONObject(it)) } ?: Settings()
@@ -48,6 +98,9 @@ class Store(context: Context) {
             s.lat?.let { put("lat", it) }
             s.lon?.let { put("lon", it) }
             put("notify", s.notify)
+            put("previewMode", s.previewMode)
+            put("musicEnabled", s.musicEnabled)
+            put("redeemedVouchers", JSONObject().apply { s.redeemedVouchers.forEach { (k, v) -> put(k, v) } })
             s.season?.let { put("season", season(it)) }
             put("shelf", JSONArray(s.shelf.map { p ->
                 JSONObject().put("year", p.year).put("culprit", p.culprit).put("ornaments", JSONArray(p.ornaments)).put("rare", JSONArray(p.rare)).put("solved", p.solved)
@@ -79,10 +132,15 @@ class Store(context: Context) {
             lat = if (o.has("lat")) o.getDouble("lat") else null,
             lon = if (o.has("lon")) o.getDouble("lon") else null,
             notify = o.optBoolean("notify", true),
+            previewMode = o.optBoolean("previewMode", false),
+            musicEnabled = o.optBoolean("musicEnabled", true),
+            redeemedVouchers = o.optJSONObject("redeemedVouchers")?.let { j ->
+                j.keys().asSequence().associate { it to j.getLong(it) }
+            } ?: emptyMap(),
             season = o.optJSONObject("season")?.let { j ->
                 Season(
                     start = j.getLong("start"),
-                    culprit = j.getString("culprit"),
+                    culprit = j.optString("culprit", "elvis"),
                     plan = Mystery.decode(j.getString("plan")),
                     lit = j.optJSONObject("lit")?.let { l -> l.keys().asSequence().associate { it.toInt() to l.getLong(it) } } ?: emptyMap(),
                     clues = ints(j.optJSONArray("clues")).toSet(),
@@ -94,7 +152,7 @@ class Store(context: Context) {
                     solved = if (j.has("solved")) j.getLong("solved") else null,
                     gifts = j.optJSONObject("gifts")?.let { g -> g.keys().asSequence().associate { k -> k.toInt() to g.getJSONObject(k).let { Gift(it.getString("text"), it.optString("kind", "thing")) } } } ?: emptyMap(),
                     giftsSealed = j.optBoolean("giftsSealed"),
-                    giftsFrom = j.optString("giftsFrom"),
+                    giftsFrom = j.optString("giftsFrom", "Elvis"),
                 )
             },
             shelf = o.optJSONArray("shelf")?.let { a ->
