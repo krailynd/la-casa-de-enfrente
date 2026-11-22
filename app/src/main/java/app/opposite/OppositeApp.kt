@@ -17,7 +17,6 @@ class OppositeApp : Application() {
     override fun onCreate() {
         super.onCreate()
         store = Store(this)
-        if (BuildConfig.DEMO) DemoSeed.seedIfEmpty(store)
         Dusk.schedule(this)
     }
 }

@@ -21,8 +21,8 @@ android {
         applicationId = "app.opposite"
         minSdk = 28
         targetSdk = 36
-        versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
-        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
+        versionCode = (System.getenv("VERSION_CODE") ?: "2").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "1.1.0"
         buildConfigField("boolean", "DEMO", demo.toString())
         // Screenshots want a still picture: no falling snow, no flickering bulbs.
         buildConfigField("boolean", "SHOTS", project.hasProperty("shots").toString())

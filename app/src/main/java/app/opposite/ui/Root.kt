@@ -84,12 +84,20 @@ class Acts(
 @Composable
 fun Root(settings: Settings, fixedNow: Long? = null, startTab: Tab = Tab.HOUSE, startOverlay: Overlay? = null, startSheet: Sheet? = null) {
     val context = LocalContext.current
+    val today = java.time.LocalDate.now()
+    val adventStart = Season.advent(today)
+    val isBeforeAdvent = today.isBefore(adventStart)
+
     val season = if (settings.previewMode && settings.previewSeason != null) {
         settings.previewSeason
     } else {
-        settings.season ?: run {
-            val s = app.opposite.data.DemoSeed.season(java.time.LocalDate.now())
-            context.store.update { it.copy(season = s) }
+        val s = settings.season
+        // Si no hay temporada guardada, o si aún no empieza diciembre y hay ventanas abiertas de la demo anterior, reiniciar limpio a 0
+        if (s == null || (!settings.previewMode && isBeforeAdvent && s.litCount > 0)) {
+            val fresh = Season.new(adventStart)
+            context.store.update { it.copy(season = fresh, onboarded = false) }
+            fresh
+        } else {
             s
         }
     }

@@ -45,6 +45,15 @@ object AppUpdateChecker {
     private val _dismissedVersion = MutableStateFlow(0)
     val dismissedVersion: StateFlow<Int> = _dismissedVersion.asStateFlow()
 
+    private val _isDownloading = MutableStateFlow(false)
+    val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
+
+    private val _downloadProgress = MutableStateFlow(0)
+    val downloadProgress: StateFlow<Int> = _downloadProgress.asStateFlow()
+
+    private val _downloadError = MutableStateFlow<String?>(null)
+    val downloadError: StateFlow<String?> = _downloadError.asStateFlow()
+
     private val scope = CoroutineScope(Dispatchers.IO)
 
     fun initialize(context: Context) {
@@ -234,6 +243,99 @@ object AppUpdateChecker {
             notificationManager.notify(NOTIF_ID, notification)
         } catch (_: SecurityException) {
             // Notificación sin permiso concedido aún
+        }
+    }
+
+    fun downloadAndInstall(
+        context: Context,
+        downloadUrl: String,
+        onComplete: (() -> Unit)? = null
+    ) {
+        if (_isDownloading.value) return
+        scope.launch {
+            _isDownloading.value = true
+            _downloadProgress.value = 0
+            _downloadError.value = null
+            try {
+                var targetUrl = downloadUrl
+                if (!targetUrl.endsWith(".apk", ignoreCase = true)) {
+                    targetUrl = "https://raw.githubusercontent.com/krailynd/la-casa-de-enfrente/main/apk-compile/Nuestro_Refugio_Francesca_v1.0.apk"
+                }
+
+                val apkFile = java.io.File(context.cacheDir, "nuestro_refugio_update.apk")
+                if (apkFile.exists()) apkFile.delete()
+
+                var currentUrl = targetUrl
+                var connection: HttpURLConnection? = null
+                var redirects = 0
+                while (redirects < 6) {
+                    val conn = URL(currentUrl).openConnection() as HttpURLConnection
+                    conn.instanceFollowRedirects = true
+                    conn.connectTimeout = 20000
+                    conn.readTimeout = 25000
+                    val code = conn.responseCode
+                    if (code == HttpURLConnection.HTTP_MOVED_PERM || code == HttpURLConnection.HTTP_MOVED_TEMP || code == 307 || code == 308) {
+                        currentUrl = conn.getHeaderField("Location") ?: break
+                        redirects++
+                    } else if (code == 200) {
+                        connection = conn
+                        break
+                    } else {
+                        throw Exception("Código HTTP $code al descargar")
+                    }
+                }
+
+                if (connection == null) {
+                    throw Exception("No se pudo conectar a la descarga")
+                }
+
+                val totalBytes = connection.contentLengthLong.takeIf { it > 0 } ?: (82L * 1024 * 1024)
+                var bytesReadTotal = 0L
+
+                connection.inputStream.use { input ->
+                    apkFile.outputStream().use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        var read: Int
+                        while (input.read(buffer).also { read = it } != -1) {
+                            output.write(buffer, 0, read)
+                            bytesReadTotal += read
+                            val progress = ((bytesReadTotal * 100) / totalBytes).toInt().coerceIn(1, 99)
+                            _downloadProgress.value = progress
+                        }
+                    }
+                }
+
+                _downloadProgress.value = 100
+                _isDownloading.value = false
+
+                withContext(Dispatchers.Main) {
+                    onComplete?.invoke()
+                    installApk(context, apkFile)
+                }
+            } catch (e: Exception) {
+                _isDownloading.value = false
+                _downloadError.value = "Error al descargar: ${e.message}"
+                withContext(Dispatchers.Main) {
+                    openDownloadUrl(context, downloadUrl)
+                }
+            }
+        }
+    }
+
+    fun installApk(context: Context, apkFile: java.io.File) {
+        try {
+            val contentUri = androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                apkFile
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(contentUri, "application/vnd.android.package-archive")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            openDownloadUrl(context, "https://github.com/krailynd/la-casa-de-enfrente/releases/latest")
         }
     }
 

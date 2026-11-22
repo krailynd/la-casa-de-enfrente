@@ -197,8 +197,9 @@ fun AppUpdateDialog(
     onUpdate: () -> Unit,
     onRemindLater: () -> Unit
 ) {
-    val currentCode = AppUpdateChecker.getCurrentVersionCode(LocalContext.current)
-    val currentName = AppUpdateChecker.getCurrentVersionName(LocalContext.current)
+    val context = LocalContext.current
+    val currentCode = AppUpdateChecker.getCurrentVersionCode(context)
+    val currentName = AppUpdateChecker.getCurrentVersionName(context)
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -303,21 +304,72 @@ fun AppUpdateDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Button(
-                    onClick = onUpdate,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFD700)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
+                val isDownloading by AppUpdateChecker.isDownloading.collectAsState()
+                val progress by AppUpdateChecker.downloadProgress.collectAsState()
+                val downloadErr by AppUpdateChecker.downloadError.collectAsState()
+
+                if (isDownloading) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF330007))
+                            .padding(14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        androidx.compose.material3.LinearProgressIndicator(
+                            progress = { progress / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            color = Color(0xFFFFD700),
+                            trackColor = Color(0xFF6B1D2A)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Descargando actualización... $progress%",
+                            color = Color(0xFFFFD700),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "El instalador se abrirá automáticamente en tu pantalla",
+                            color = Color(0xFFFFCAD4),
+                            fontSize = 11.sp
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            AppUpdateChecker.downloadAndInstall(context, info.downloadUrl) {
+                                onDismiss()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFD700)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "✨ Actualizar Ahora Directamente ✨",
+                            color = Color(0xFF330007),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                if (downloadErr != null) {
+                    Spacer(Modifier.height(6.dp))
                     Text(
-                        text = "Descargar e Instalar (GitHub)",
-                        color = Color(0xFF330007),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
+                        text = downloadErr ?: "",
+                        color = Color(0xFFFF8A8A),
+                        fontSize = 11.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
 
