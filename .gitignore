@@ -16,4 +16,5 @@
 __pycache__/
 kls_database.db
 /musicas/
+/apk-compile/
 mise.toml
