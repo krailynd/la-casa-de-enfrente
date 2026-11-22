@@ -47,11 +47,33 @@ object OurNotebookRepository {
         if (file.exists()) {
             try {
                 val json = file.readText()
-                _data.value = parseJson(json)
+                val parsed = parseJson(json)
+                // Sanitizar listas viejas predeterminadas si tienen los textos antiguos de semilla
+                val sanitized = parsed.copy(
+                    categories = parsed.categories.map { cat ->
+                        if (cat.id == "metas_suenos" || cat.id == "peliculas_series" || cat.id == "lugares_visitar") {
+                            cat.copy(
+                                notes = cat.notes.map { note ->
+                                    if (note.id == "metas_2027" && note.todos.any { it.text.contains("Aprender a cocinar pasta") }) {
+                                        note.copy(todos = emptyList())
+                                    } else if (note.id == "cine_lista" && note.todos.any { it.text.contains("About Time") }) {
+                                        note.copy(todos = emptyList())
+                                    } else if (note.id == "rutas_ica" && note.todos.any { it.text.contains("Huacachina") }) {
+                                        note.copy(todos = emptyList())
+                                    } else {
+                                        note
+                                    }
+                                }
+                            )
+                        } else cat
+                    }
+                )
+                _data.value = sanitized
+                save(context, sanitized)
                 return
             } catch (_: Exception) {}
         }
-        // Semilla inicial por defecto
+        // Semilla inicial por defecto limpia (en cero)
         val initial = getSeedData()
         _data.value = initial
         save(context, initial)
@@ -82,6 +104,115 @@ object OurNotebookRepository {
                         }
                     )
                 } else cat
+            }
+        )
+        save(context, updated)
+    }
+
+    fun deleteTodo(context: Context, categoryId: String, noteId: String, todoId: String) {
+        val current = _data.value
+        val updated = current.copy(
+            categories = current.categories.map { cat ->
+                if (cat.id == categoryId) {
+                    cat.copy(
+                        notes = cat.notes.map { note ->
+                            if (note.id == noteId) {
+                                note.copy(todos = note.todos.filter { it.id != todoId })
+                            } else note
+                        }
+                    )
+                } else cat
+            }
+        )
+        save(context, updated)
+    }
+
+    fun moveTodoUp(context: Context, categoryId: String, noteId: String, todoIndex: Int) {
+        if (todoIndex <= 0) return
+        val current = _data.value
+        val updated = current.copy(
+            categories = current.categories.map { cat ->
+                if (cat.id == categoryId) {
+                    cat.copy(
+                        notes = cat.notes.map { note ->
+                            if (note.id == noteId && todoIndex < note.todos.size) {
+                                val list = note.todos.toMutableList()
+                                val item = list.removeAt(todoIndex)
+                                list.add(todoIndex - 1, item)
+                                note.copy(todos = list)
+                            } else note
+                        }
+                    )
+                } else cat
+            }
+        )
+        save(context, updated)
+    }
+
+    fun moveTodoDown(context: Context, categoryId: String, noteId: String, todoIndex: Int) {
+        val current = _data.value
+        val updated = current.copy(
+            categories = current.categories.map { cat ->
+                if (cat.id == categoryId) {
+                    cat.copy(
+                        notes = cat.notes.map { note ->
+                            if (note.id == noteId && todoIndex >= 0 && todoIndex < note.todos.size - 1) {
+                                val list = note.todos.toMutableList()
+                                val item = list.removeAt(todoIndex)
+                                list.add(todoIndex + 1, item)
+                                note.copy(todos = list)
+                            } else note
+                        }
+                    )
+                } else cat
+            }
+        )
+        save(context, updated)
+    }
+
+    fun clearAllTodos(context: Context, categoryId: String, noteId: String) {
+        val current = _data.value
+        val updated = current.copy(
+            categories = current.categories.map { cat ->
+                if (cat.id == categoryId) {
+                    cat.copy(
+                        notes = cat.notes.map { note ->
+                            if (note.id == noteId) {
+                                note.copy(todos = emptyList())
+                            } else note
+                        }
+                    )
+                } else cat
+            }
+        )
+        save(context, updated)
+    }
+
+    fun deleteNote(context: Context, categoryId: String, noteId: String) {
+        val current = _data.value
+        val updated = current.copy(
+            categories = current.categories.map { cat ->
+                if (cat.id == categoryId) {
+                    cat.copy(notes = cat.notes.filter { it.id != noteId })
+                } else cat
+            }
+        )
+        save(context, updated)
+    }
+
+    fun deleteCategory(context: Context, categoryId: String) {
+        val current = _data.value
+        val updated = current.copy(
+            categories = current.categories.filter { it.id != categoryId }
+        )
+        save(context, updated)
+    }
+
+    fun clearCategory(context: Context, categoryId: String) {
+        val current = _data.value
+        val updated = current.copy(
+            categories = current.categories.map { cat ->
+                if (cat.id == categoryId) cat.copy(notes = emptyList()) else cat
             }
         )
         save(context, updated)
@@ -147,13 +278,7 @@ object OurNotebookRepository {
                             id = "metas_2027",
                             title = "Metas para nuestra nueva etapa",
                             content = "Pequeños y grandes pasos para cuidar nuestra paz, crecer y ser felices juntos.",
-                            todos = listOf(
-                                NotebookTodoItem(text = "Aprender a cocinar pasta italiana desde cero juntos", isDone = false),
-                                NotebookTodoItem(text = "Hacer un viaje tranquilo a una cabaña en la sierra o el campo", isDone = false),
-                                NotebookTodoItem(text = "Componer una canción juntos donde tú escribas una estrofa", isDone = false),
-                                NotebookTodoItem(text = "Tener nuestro propio rincón acogedor lleno de plantitas y luz suave", isDone = false),
-                                NotebookTodoItem(text = "Cuidar nuestra comunicación con amor en cada conversación", isDone = true),
-                            ),
+                            todos = emptyList(),
                             dateStr = "Noviembre 2026",
                         )
                     )
@@ -168,12 +293,7 @@ object OurNotebookRepository {
                             id = "cine_lista",
                             title = "Maratón de películas pendientes",
                             content = "Películas recomendadas y comedias para reírnos abrazados.",
-                            todos = listOf(
-                                NotebookTodoItem(text = "Cuestión de Tiempo (About Time)", isDone = false),
-                                NotebookTodoItem(text = "El Diario de Noah (The Notebook)", isDone = false),
-                                NotebookTodoItem(text = "Maratón de películas animadas navideñas", isDone = false),
-                                NotebookTodoItem(text = "La La Land con luz tenue", isDone = false),
-                            ),
+                            todos = emptyList(),
                             dateStr = "Diciembre 2026",
                         )
                     )
@@ -188,11 +308,7 @@ object OurNotebookRepository {
                             id = "rutas_ica",
                             title = "Lugares especiales en Ica",
                             content = "Lugares para caminar despacio, tomarnos fotos y respirar aire fresco.",
-                            todos = listOf(
-                                NotebookTodoItem(text = "Ver el atardecer en Huacachina comiendo tejas de nuez", isDone = false),
-                                NotebookTodoItem(text = "Caminata por la orilla del mar en Paracas", isDone = false),
-                                NotebookTodoItem(text = "Encontrar una nueva cafetería acogedora en el centro de Ica", isDone = false),
-                            ),
+                            todos = emptyList(),
                             dateStr = "Noviembre 2026",
                         )
                     )

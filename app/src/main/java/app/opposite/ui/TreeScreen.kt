@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -30,6 +31,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
@@ -78,6 +80,7 @@ fun TreeScreen(evening: Evening, settings: Settings, acts: Acts) {
     val time by rememberSeconds()
     val base by produceState<ImageBitmap?>(null) { value = withContext(Dispatchers.Default) { TreeBitmap.get() } }
     var picked by remember { mutableStateOf<Int?>(null) }
+    val atmosphere by app.opposite.data.location.LocationTimeProvider.currentAtmosphere.collectAsState()
     val ornaments = s.lit.keys.sorted().map { it to (it in s.rare) }
     Column(Modifier.verticalScroll(rememberScrollState())) {
         Header(evening, settings, acts)
@@ -85,8 +88,47 @@ fun TreeScreen(evening: Evening, settings: Settings, acts: Acts) {
         val img = base
         if (img == null) Box(Modifier.fillMaxWidth().aspectRatio(TREE_W / TREE_H).background(Brush.verticalGradient(listOf(c(0xFF2A2236), c(0xFF46354A)))), contentAlignment = Alignment.Center) {
             Text(t("Ставим ёлку…", "Montando el árbol…"), style = T.Muted)
-        } else Picture(TREE_W, TREE_H, onTap = { x, y -> picked = TreeArt.hit(x, y, s.lit.keys) }) {
+        } else Picture(
+            TREE_W,
+            TREE_H,
+            onTap = { x, y ->
+                if (x in 12f..84f && y in 32f..146f) {
+                    acts.toast("Cielo de nuestra historia en vivo: ${atmosphere.phase.name} 🌅❤️")
+                } else {
+                    picked = TreeArt.hit(x, y, s.lit.keys)
+                }
+            }
+        ) {
             ds.drawImage(img, IntOffset.Zero, IntSize(img.width, img.height), IntOffset.Zero, IntSize(TREE_W.toInt(), TREE_H.toInt()), filterQuality = FilterQuality.High)
+
+            // Ventana viva con el cielo astronómico real en tiempo real
+            rect(
+                14f, 34f, 66f, 110f,
+                Brush.verticalGradient(
+                    listOf(atmosphere.skyTop, atmosphere.skyMid, atmosphere.skyHorizon),
+                    34f, 144f
+                )
+            )
+            if (atmosphere.isNight) {
+                circle(24f, 48f, 1.2f, Color.White, .9f)
+                circle(55f, 62f, 1.5f, Color.White, .85f)
+                circle(38f, 95f, 1.0f, Color.White, .8f)
+                circle(68f, 42f, 1.3f, Color(0xFFFFD700), .9f)
+            } else if (atmosphere.isSunset) {
+                circle(46f, 90f, 14f, Brush.radialGradient(listOf(Color(0xFFFF5D3A), Color.Transparent), Offset(46f, 90f), 22f))
+                circle(46f, 90f, 7f, Color(0xFFFFE08A))
+            } else {
+                circle(52f, 60f, 12f, Color(0xFFFFF6D6), .9f)
+            }
+            // Marco blanco de la ventana
+            stroke("M12 32 h70 v114 h-70Z", c(0xFFE4E6EC), 3f)
+            stroke("M47 34 v110 M14 72 h66", c(0xFFE4E6EC), 2f)
+
+            // Iluminación ambiental en la habitación
+            if (atmosphere.ambientFilter != Color.Transparent) {
+                rect(0f, 0f, TREE_W, TREE_H, atmosphere.ambientFilter)
+            }
+
             TreeArt.live(this, ornaments, time)
         }
         val p = picked

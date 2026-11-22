@@ -69,8 +69,14 @@ class Evening(
     val previewMode: Boolean = false,
 ) {
     val today: LocalDate = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+    val localTime = Instant.ofEpochMilli(now).atZone(zone).toLocalTime()
     val day = season.day(today)
-    val dusk: Boolean get() = now >= sunset(today)
+    // Es noche si es de madrugada (antes del amanecer ~5:40 AM) o después del atardecer (>= sunset)
+    val isNight: Boolean get() {
+        val minuteOfDay = localTime.hour * 60 + localTime.minute
+        return minuteOfDay < 340 || now >= sunset(today)
+    }
+    val dusk: Boolean get() = isNight
 
     fun state(d: Int): WinState = when {
         previewMode -> if (season.lit.containsKey(d)) WinState.LIT else WinState.TODAY

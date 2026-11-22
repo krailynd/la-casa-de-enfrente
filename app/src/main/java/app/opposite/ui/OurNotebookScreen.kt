@@ -162,6 +162,19 @@ fun OurNotebookScreen(acts: Acts) {
                         Text(cat.title, style = T.Name.copy(color = C.warm, fontSize = 14.sp, fontWeight = FontWeight.Bold))
                         Text(cat.description, style = T.Body.copy(color = C.paperMuted, fontSize = 11.sp))
                     }
+                    if (cat.id.startsWith("cat_")) {
+                        Text(
+                            "🗑",
+                            modifier = Modifier
+                                .padding(end = 10.dp)
+                                .clickable {
+                                    OurNotebookRepository.deleteCategory(context, cat.id)
+                                    selectedCatId = categories.firstOrNull { it.id != cat.id }?.id ?: ""
+                                    acts.toast("Libreta eliminada")
+                                },
+                            fontSize = 16.sp
+                        )
+                    }
                     WarmButton("+ Nota") { showAddNoteDialog = true }
                 }
             }
@@ -237,19 +250,11 @@ fun OurNotebookScreen(acts: Acts) {
                                         .padding(8.dp)
                                 ) {
                                     Column {
-                                        note.todos.forEach { todo ->
+                                        note.todos.forEachIndexed { idx, todo ->
                                             Row(
                                                 Modifier
                                                     .fillMaxWidth()
-                                                    .clickable {
-                                                        OurNotebookRepository.toggleTodo(
-                                                            context,
-                                                            cat.id,
-                                                            note.id,
-                                                            todo.id
-                                                        )
-                                                    }
-                                                    .padding(vertical = 2.dp),
+                                                    .padding(vertical = 1.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Checkbox(
@@ -270,11 +275,63 @@ fun OurNotebookScreen(acts: Acts) {
                                                 )
                                                 Text(
                                                     todo.text,
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clickable {
+                                                            OurNotebookRepository.toggleTodo(
+                                                                context,
+                                                                cat.id,
+                                                                note.id,
+                                                                todo.id
+                                                            )
+                                                        },
                                                     style = T.Body.copy(
                                                         color = if (todo.isDone) C.dim else C.ink,
                                                         fontSize = 13.sp,
                                                         textDecoration = if (todo.isDone) TextDecoration.LineThrough else null
                                                     )
+                                                )
+
+                                                // Reordenar arriba
+                                                if (idx > 0) {
+                                                    Text(
+                                                        "▲",
+                                                        modifier = Modifier
+                                                            .padding(horizontal = 4.dp)
+                                                            .clickable {
+                                                                OurNotebookRepository.moveTodoUp(context, cat.id, note.id, idx)
+                                                            },
+                                                        fontSize = 11.sp,
+                                                        color = Color(0xFFFFD700)
+                                                    )
+                                                }
+
+                                                // Reordenar abajo
+                                                if (idx < note.todos.size - 1) {
+                                                    Text(
+                                                        "▼",
+                                                        modifier = Modifier
+                                                            .padding(horizontal = 4.dp)
+                                                            .clickable {
+                                                                OurNotebookRepository.moveTodoDown(context, cat.id, note.id, idx)
+                                                            },
+                                                        fontSize = 11.sp,
+                                                        color = Color(0xFFFFD700)
+                                                    )
+                                                }
+
+                                                // Eliminar tarea individual
+                                                Text(
+                                                    "✕",
+                                                    modifier = Modifier
+                                                        .padding(start = 6.dp, end = 4.dp)
+                                                        .clickable {
+                                                            OurNotebookRepository.deleteTodo(context, cat.id, note.id, todo.id)
+                                                            acts.toast("Tarea eliminada")
+                                                        },
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFFE85D75)
                                                 )
                                             }
                                         }
@@ -284,11 +341,36 @@ fun OurNotebookScreen(acts: Acts) {
 
                             Spacer(Modifier.height(10.dp))
 
-                            // Action: Add Todo Item
+                            // Action buttons: Vaciar lista, Eliminar nota, Agregar tarea
                             Row(
                                 Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (note.todos.isNotEmpty()) {
+                                        Text(
+                                            "🧹 Vaciar lista",
+                                            modifier = Modifier
+                                                .clickable {
+                                                    OurNotebookRepository.clearAllTodos(context, cat.id, note.id)
+                                                    acts.toast("Lista vaciada a 0 ✨")
+                                                }
+                                                .padding(end = 12.dp),
+                                            style = T.Eyebrow.copy(color = Color(0xFFFF85A1), fontSize = 11.sp)
+                                        )
+                                    }
+
+                                    Text(
+                                        "🗑 Eliminar",
+                                        modifier = Modifier.clickable {
+                                            OurNotebookRepository.deleteNote(context, cat.id, note.id)
+                                            acts.toast("Nota eliminada")
+                                        },
+                                        style = T.Eyebrow.copy(color = Color(0xFFB5838D), fontSize = 11.sp)
+                                    )
+                                }
+
                                 GhostButton("+ Agregar tarea") {
                                     showAddTodoDialog = note
                                 }
@@ -302,6 +384,18 @@ fun OurNotebookScreen(acts: Acts) {
         }
     }
 
+    val paperTextFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color(0xFF1E0A12),
+        unfocusedTextColor = Color(0xFF1E0A12),
+        cursorColor = Color(0xFFB8142C),
+        focusedBorderColor = Color(0xFFB8142C),
+        unfocusedBorderColor = Color(0xFF6B2B38),
+        focusedLabelColor = Color(0xFFB8142C),
+        unfocusedLabelColor = Color(0xFF6B2B38),
+        focusedPlaceholderColor = Color(0xFF8B5B68),
+        unfocusedPlaceholderColor = Color(0xFF8B5B68),
+    )
+
     // Dialog: Add Note
     if (showAddNoteDialog && currentCat != null) {
         var noteTitle by remember { mutableStateOf("") }
@@ -309,31 +403,29 @@ fun OurNotebookScreen(acts: Acts) {
 
         AlertDialog(
             onDismissRequest = { showAddNoteDialog = false },
-            title = { Text("Nueva Nota en ${currentCat.title}", style = T.Title.copy(color = C.paperInk, fontSize = 18.sp)) },
+            title = { Text("Nueva Nota en ${currentCat.title}", style = T.Title.copy(color = Color(0xFF1E0A12), fontSize = 18.sp, fontWeight = FontWeight.Bold)) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = noteTitle,
                         onValueChange = { noteTitle = it },
-                        label = { Text("Título") },
+                        label = { Text("Título de la nota") },
+                        placeholder = { Text("Ej: Nuestra próxima salida...") },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF1E0A12), fontSize = 14.sp, fontWeight = FontWeight.Medium),
                         modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = C.red,
-                            focusedLabelColor = C.red,
-                        )
+                        colors = paperTextFieldColors
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(10.dp))
                     OutlinedTextField(
                         value = noteContent,
                         onValueChange = { noteContent = it },
-                        label = { Text("Escribe algo lindo...") },
+                        label = { Text("Contenido de la nota") },
+                        placeholder = { Text("Escribe algo lindo para nosotros...") },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF1E0A12), fontSize = 14.sp, fontWeight = FontWeight.Normal),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(120.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = C.red,
-                            focusedLabelColor = C.red,
-                        )
+                            .height(130.dp),
+                        colors = paperTextFieldColors
                     )
                 }
             },
@@ -349,7 +441,7 @@ fun OurNotebookScreen(acts: Acts) {
             dismissButton = {
                 GhostButton("Cancelar", dark = false) { showAddNoteDialog = false }
             },
-            containerColor = C.paper
+            containerColor = Color(0xFFFFF7EF)
         )
     }
 
@@ -359,17 +451,16 @@ fun OurNotebookScreen(acts: Acts) {
 
         AlertDialog(
             onDismissRequest = { showAddTodoDialog = null },
-            title = { Text("Agregar tarea a '${targetNote.title}'", style = T.Title.copy(color = C.paperInk, fontSize = 16.sp)) },
+            title = { Text("Agregar tarea a '${targetNote.title}'", style = T.Title.copy(color = Color(0xFF1E0A12), fontSize = 16.sp, fontWeight = FontWeight.Bold)) },
             text = {
                 OutlinedTextField(
                     value = todoText,
                     onValueChange = { todoText = it },
                     label = { Text("Tarea o meta") },
+                    placeholder = { Text("Ej: Ver el atardecer en Huacachina...") },
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF1E0A12), fontSize = 14.sp, fontWeight = FontWeight.Medium),
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = C.red,
-                        focusedLabelColor = C.red,
-                    )
+                    colors = paperTextFieldColors
                 )
             },
             confirmButton = {
@@ -384,7 +475,7 @@ fun OurNotebookScreen(acts: Acts) {
             dismissButton = {
                 GhostButton("Cancelar", dark = false) { showAddTodoDialog = null }
             },
-            containerColor = C.paper
+            containerColor = Color(0xFFFFF7EF)
         )
     }
 
@@ -396,7 +487,7 @@ fun OurNotebookScreen(acts: Acts) {
 
         AlertDialog(
             onDismissRequest = { showAddCategoryDialog = false },
-            title = { Text("Crear Nueva Libreta", style = T.Title.copy(color = C.paperInk, fontSize = 18.sp)) },
+            title = { Text("Crear Nueva Libreta", style = T.Title.copy(color = Color(0xFF1E0A12), fontSize = 18.sp, fontWeight = FontWeight.Bold)) },
             text = {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -404,22 +495,30 @@ fun OurNotebookScreen(acts: Acts) {
                             value = catIcon,
                             onValueChange = { catIcon = it.take(2) },
                             label = { Text("Emoji") },
-                            modifier = Modifier.width(70.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF1E0A12), fontSize = 18.sp),
+                            modifier = Modifier.width(76.dp),
+                            colors = paperTextFieldColors
                         )
                         Spacer(Modifier.width(8.dp))
                         OutlinedTextField(
                             value = catTitle,
                             onValueChange = { catTitle = it },
                             label = { Text("Título de la libreta") },
+                            placeholder = { Text("Ej: Mis Recuerdos") },
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF1E0A12), fontSize = 14.sp, fontWeight = FontWeight.Medium),
                             modifier = Modifier.weight(1f),
+                            colors = paperTextFieldColors
                         )
                     }
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(10.dp))
                     OutlinedTextField(
                         value = catDesc,
                         onValueChange = { catDesc = it },
                         label = { Text("Descripción corta") },
+                        placeholder = { Text("¿De qué se trata esta libreta?") },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF1E0A12), fontSize = 14.sp),
                         modifier = Modifier.fillMaxWidth(),
+                        colors = paperTextFieldColors
                     )
                 }
             },
@@ -435,7 +534,7 @@ fun OurNotebookScreen(acts: Acts) {
             dismissButton = {
                 GhostButton("Cancelar", dark = false) { showAddCategoryDialog = false }
             },
-            containerColor = C.paper
+            containerColor = Color(0xFFFFF7EF)
         )
     }
 }

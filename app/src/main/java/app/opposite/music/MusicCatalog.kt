@@ -20,6 +20,7 @@ data class Playlist(
     val colorHex: Long,
     val icon: String,
     val description: String,
+    val coverPath: String = "",
     val songs: List<Song>,
 )
 
@@ -32,6 +33,7 @@ object MusicCatalog {
         colorHex = 0xFFE04F5F,
         icon = "💖",
         description = "Canciones suaves, llenas de ternura y cariño para consentir a Principessa en cualquier momento del día.",
+        coverPath = "covers/i_love_you.jpg",
         songs = listOf(
             Song(
                 id = "dulce_hermosos_ojos",
@@ -77,6 +79,7 @@ object MusicCatalog {
         colorHex = 0xFFC81D31,
         icon = "❤️",
         description = "Letras profundas y ritmos dedicados a nuestra historia, nuestro nuevo comienzo y nuestro amor sincero.",
+        coverPath = "covers/elegante_y_hermosa.jpg",
         songs = listOf(
             Song(
                 id = "amor_elegante_hermosa",
@@ -133,6 +136,7 @@ object MusicCatalog {
         colorHex = 0xFF2D5A3E,
         icon = "🎄",
         description = "El espíritu cálido de diciembre, velitas en el refugio y villancicos con todo el amor para mi Blanquita.",
+        coverPath = "covers/amando_tus_ojos.jpg",
         songs = listOf(
             Song(
                 id = "navidena_amando_tus_ojos",
@@ -189,6 +193,7 @@ object MusicCatalog {
         colorHex = 0xFF9E2A2B,
         icon = "🔥",
         description = "Canciones íntimas, intensas y protectoras. Para recordarte que eres mi refugio y mi mundo entero.",
+        coverPath = "covers/eres_mi_abrigo_y_refugio.jpg",
         songs = listOf(
             Song(
                 id = "pasion_abrigo_refugio",

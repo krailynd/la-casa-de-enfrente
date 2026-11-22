@@ -27,6 +27,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -212,6 +213,129 @@ fun CreatorMirrorDialog(
                                     checkedTrackColor = C.red,
                                 ),
                             )
+                        }
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // Solar Atmosphere & Time Simulator
+                    val simHour by app.opposite.data.location.LocationTimeProvider.simulatedHour.collectAsState()
+                    val atmosphere by app.opposite.data.location.LocationTimeProvider.currentAtmosphere.collectAsState()
+
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(Sh.Md)
+                            .background(Color(0xFF2B0E1B))
+                            .border(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f), Sh.Md)
+                            .padding(12.dp),
+                    ) {
+                        Column {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "🌤️ Simulación Solar en Vivo",
+                                    style = T.Name.copy(color = Color(0xFFFFD700), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                )
+                                Text(
+                                    if (simHour != null) {
+                                        val h = simHour!!.toInt()
+                                        val m = ((simHour!! - h) * 60).toInt()
+                                        String.format("%02d:%02d (Simulada)", h, m)
+                                    } else "Hora Real (Perú)",
+                                    style = T.Eyebrow.copy(color = Color(0xFFFFCAD4), fontSize = 11.sp)
+                                )
+                            }
+
+                            Text(
+                                "Fase actual: ${atmosphere.phase.name} · Sol: ${(atmosphere.sunProgress * 100).toInt()}% · Nieve/Luces activas",
+                                style = T.Muted.copy(color = Color(0xFFB5838D), fontSize = 10.sp),
+                                modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
+                            )
+
+                            // Slider 00:00 - 23:59
+                            var sliderVal by remember(simHour) {
+                                mutableStateOf<Float>(simHour ?: 18.25f)
+                            }
+                            androidx.compose.material3.Slider(
+                                value = sliderVal,
+                                onValueChange = {
+                                    sliderVal = it
+                                    app.opposite.data.location.LocationTimeProvider.setSimulatedHour(it)
+                                },
+                                valueRange = 0f..23.99f,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = androidx.compose.material3.SliderDefaults.colors(
+                                    thumbColor = Color(0xFFFFD700),
+                                    activeTrackColor = Color(0xFFC81D31),
+                                    inactiveTrackColor = Color(0xFF4A1828)
+                                )
+                            )
+
+                            // Quick phase buttons
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    "🌅 Alba",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFFFD700),
+                                    modifier = Modifier.clickable {
+                                        app.opposite.data.location.LocationTimeProvider.setQuickPhase(app.opposite.domain.astronomy.SolarPhase.SUNRISE)
+                                        acts.toast("Amanecer en Ica 🌅")
+                                    }
+                                )
+                                Text(
+                                    "☀️ Día",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFFFD700),
+                                    modifier = Modifier.clickable {
+                                        app.opposite.data.location.LocationTimeProvider.setQuickPhase(app.opposite.domain.astronomy.SolarPhase.MORNING)
+                                        acts.toast("Mañana luminosa ☀️")
+                                    }
+                                )
+                                Text(
+                                    "🌤️ Tarde",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFFFD700),
+                                    modifier = Modifier.clickable {
+                                        app.opposite.data.location.LocationTimeProvider.setQuickPhase(app.opposite.domain.astronomy.SolarPhase.MIDDAY_AFTERNOON)
+                                        acts.toast("Tarde cálida 🌤️")
+                                    }
+                                )
+                                Text(
+                                    "🌇 Carmesí",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFFF85A1),
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.clickable {
+                                        app.opposite.data.location.LocationTimeProvider.setQuickPhase(app.opposite.domain.astronomy.SolarPhase.GOLDEN_SUNSET)
+                                        acts.toast("Atardecer Carmesí & Dorado 🌇❤️")
+                                    }
+                                )
+                                Text(
+                                    "🌙 Noche",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFC8E2F5),
+                                    modifier = Modifier.clickable {
+                                        app.opposite.data.location.LocationTimeProvider.setQuickPhase(app.opposite.domain.astronomy.SolarPhase.DEEP_NIGHT)
+                                        acts.toast("Noche profunda estrellada 🌙")
+                                    }
+                                )
+                                Text(
+                                    "⏱️ Real",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFFFFFFF),
+                                    modifier = Modifier.clickable {
+                                        app.opposite.data.location.LocationTimeProvider.resetToRealTime()
+                                        acts.toast("Sincronizado con Hora Real")
+                                    }
+                                )
+                            }
                         }
                     }
 

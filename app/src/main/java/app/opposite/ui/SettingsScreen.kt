@@ -53,6 +53,7 @@ object Community {
 fun SettingsScreen(settings: Settings, evening: Evening, acts: Acts) {
     val context = LocalContext.current
     var restart by remember { mutableStateOf(false) }
+    var showCreatorMirror by remember { mutableStateOf(false) }
     val locate = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         if (ok) lastPlace(context)?.let { (la, lo) -> acts.settings { it.copy(lat = la, lon = lo) } }
     }
@@ -100,6 +101,12 @@ fun SettingsScreen(settings: Settings, evening: Evening, acts: Acts) {
             acts.store.togglePreviewMode()
             acts.toast(if (!settings.previewMode) "Modo Preview ACTIVADO" else "Modo Preview desactivado")
         }
+        Item(
+            "👑 Panel Espejo de Elvis & Simulador Solar",
+            "Control de cielo en vivo (Alba, Día, Carmesí, Noche) y sincronización con Francesca",
+        ) {
+            showCreatorMirror = true
+        }
         Column(Modifier.padding(16.dp).fillMaxWidth().clip(Sh.Md).border(1.dp, C.line, Sh.Md).padding(14.dp)) {
             Text("Nuestra Historia", style = T.Name.copy(color = C.warm))
             Text(
@@ -112,17 +119,51 @@ fun SettingsScreen(settings: Settings, evening: Evening, acts: Acts) {
             "Hecho a mano en Ica, Perú para Francesca. Reescribiendo nuestra historia juntos desde el 6 de noviembre de 2026 a las 6:18 PM. Te ama tu Rata Aspirable ❤️",
             style = T.Muted, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp),
         )
-        for ((icon, label, url) in listOf(
-            Triple("🐞", t("Сообщить об ошибке", "Informar de un error"), Community.BUG),
-            Triple("💡", t("Предложить идею", "Proponer una idea"), Community.IDEA),
-            Triple("🔔", t("Подписаться на обновления", "Seguir novedades"), Community.FOLLOW),
-            Triple("💬", t("Чат StillCraft", "Chat de StillCraft"), Community.CHAT),
-        )) Item("$icon  $label", null) {
-            runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        Eyebrow("Contacto & krailynd", Modifier.padding(start = 18.dp, top = 4.dp))
+        for ((icon, label, sub, url) in listOf(
+            listOf(
+                "💬",
+                "Escribir a Elvis por WhatsApp",
+                "Chat directo con tu novio (907163498)",
+                "https://wa.me/51907163498?text=Hola%20Elvis%20mi%20amor%20%E2%9D%A4%EF%B8%8F"
+            ),
+            listOf(
+                "💡",
+                "Proponer una idea para Nuestro Refugio",
+                "Escríbele a Elvis qué te gustaría agregar a la app",
+                "https://wa.me/51907163498?text=Hola%20Elvis,%20tengo%20una%20idea%20bonita%20para%20la%20app:%20"
+            ),
+            listOf(
+                "🐞",
+                "Informar de un error o detalle",
+                "Avisa a Elvis si algo no se ve bien en tu teléfono",
+                "https://wa.me/51907163498?text=Hola%20Elvis,%20encontr%C3%A9%20este%20detalle%20en%20la%20app:%20"
+            ),
+            listOf(
+                "✨",
+                "Repositorio Oficial (krailynd)",
+                "La Casa de Enfrente en GitHub",
+                "https://github.com/krailynd/la-casa-de-enfrente"
+            ),
+        )) Item("$icon  $label", sub) {
+            runCatching {
+                context.startActivity(
+                    android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
         }
         Spacer(Modifier.height(12.dp))
         Text("${t("версия", "versión")} ${BuildConfig.VERSION_NAME}", style = T.Muted, modifier = Modifier.padding(horizontal = 18.dp))
         Spacer(Modifier.height(24.dp))
+    }
+
+    if (showCreatorMirror) {
+        CreatorMirrorDialog(
+            settings = settings,
+            acts = acts,
+            onDismiss = { showCreatorMirror = false }
+        )
     }
 }
 

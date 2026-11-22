@@ -73,10 +73,20 @@ fun rememberSeconds(): State<Float> {
 
 /** Draws a picture made in its own w×h units, scaled to the width; taps come back in picture units. */
 @Composable
-fun Picture(w: Float, h: Float, modifier: Modifier = Modifier, onTap: ((Float, Float) -> Unit)? = null, draw: Sk.(DrawScope) -> Unit) {
+fun Picture(
+    w: Float,
+    h: Float,
+    modifier: Modifier = Modifier,
+    onTap: ((Float, Float) -> Unit)? = null,
+    onDoubleTap: ((Float, Float) -> Unit)? = null,
+    draw: Sk.(DrawScope) -> Unit
+) {
     var m = modifier.fillMaxWidth().aspectRatio(w / h)
-    if (onTap != null) m = m.pointerInput(w, h) {
-        detectTapGestures { o -> val k = size.width / w; onTap(o.x / k, o.y / k) }
+    if (onTap != null || onDoubleTap != null) m = m.pointerInput(w, h) {
+        detectTapGestures(
+            onDoubleTap = if (onDoubleTap != null) { o -> val k = size.width / w; onDoubleTap(o.x / k, o.y / k) } else null,
+            onTap = if (onTap != null) { o -> val k = size.width / w; onTap(o.x / k, o.y / k) } else null
+        )
     }
     Canvas(m) {
         val k = size.width / w

@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -215,11 +217,38 @@ private fun PlaylistsOverview(onSelectPlaylist: (Playlist) -> Unit, acts: Acts) 
             .fillMaxSize()
             .padding(horizontal = 16.dp),
     ) {
+        // Carousel of Song Banners / Posters
+        item {
+            Text(
+                "PÓSTERS & BANNERS MUSICALES 🖼️✨",
+                style = T.Eyebrow.copy(color = C.dim, fontSize = 11.sp, letterSpacing = 1.sp),
+                modifier = Modifier.padding(top = 10.dp, bottom = 8.dp),
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+            ) {
+                items(MusicCatalog.allSongs) { song ->
+                    val isPlaying = MusicController.currentSong?.id == song.id && MusicController.isPlaying
+                    SongBannerCard(
+                        song = song,
+                        isPlaying = isPlaying,
+                        onClick = {
+                            MusicController.playSong(context, song)
+                            acts.toast("Reproduciendo ${song.title} 🎵")
+                        }
+                    )
+                }
+            }
+        }
+
         item {
             Text(
                 "NUESTRAS PLAYLISTS",
                 style = T.Eyebrow.copy(color = C.dim, fontSize = 11.sp, letterSpacing = 1.sp),
-                modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+                modifier = Modifier.padding(top = 6.dp, bottom = 8.dp),
             )
         }
 
@@ -268,7 +297,83 @@ private fun PlaylistsOverview(onSelectPlaylist: (Playlist) -> Unit, acts: Acts) 
 }
 
 @Composable
+private fun SongBannerCard(
+    song: Song,
+    isPlaying: Boolean,
+    onClick: () -> Unit,
+) {
+    val coverBitmap = rememberAssetBitmap(song.coverPath)
+    Box(
+        Modifier
+            .width(136.dp)
+            .clip(Sh.Md)
+            .background(Color(0xFF200E17))
+            .border(1.dp, if (isPlaying) C.red else C.line.copy(alpha = 0.5f), Sh.Md)
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        Column {
+            Box(
+                Modifier
+                    .size(120.dp)
+                    .clip(Sh.Sm)
+                    .border(1.dp, if (isPlaying) C.red else Color(0x33F7EFE2), Sh.Sm)
+                    .background(Color(0xFF160910)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (coverBitmap != null) {
+                    Image(
+                        bitmap = coverBitmap,
+                        contentDescription = song.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(song.icon, fontSize = 36.sp)
+                }
+                if (isPlaying) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color(0x77000000)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        EqualizerWaveAnimation()
+                    }
+                } else {
+                    Box(
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp)
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xCC000000)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("▶", color = Color.White, fontSize = 11.sp)
+                    }
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                song.title,
+                style = T.Name.copy(color = if (isPlaying) C.warm else C.ink, fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                song.playlistName,
+                style = T.Eyebrow.copy(color = C.dim, fontSize = 10.sp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
 private fun PlaylistCard(playlist: Playlist, onClick: () -> Unit, onPlayAll: () -> Unit) {
+    val coverBitmap = rememberAssetBitmap(playlist.coverPath)
     Box(
         Modifier
             .fillMaxWidth()
@@ -283,18 +388,39 @@ private fun PlaylistCard(playlist: Playlist, onClick: () -> Unit, onPlayAll: () 
             )
             .border(1.dp, Color(playlist.colorHex).copy(alpha = 0.5f), Sh.Lg)
             .clickable(onClick = onClick)
-            .padding(14.dp),
+            .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Icon Badge
+            // Album Poster Badge
             Box(
                 Modifier
-                    .size(54.dp)
+                    .size(68.dp)
                     .clip(Sh.Md)
-                    .background(Color(playlist.colorHex).copy(alpha = 0.4f)),
+                    .border(1.5.dp, Color(playlist.colorHex), Sh.Md)
+                    .background(Color(0xFF200E17)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(playlist.icon, fontSize = 26.sp)
+                if (coverBitmap != null) {
+                    Image(
+                        bitmap = coverBitmap,
+                        contentDescription = playlist.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Text(playlist.icon, fontSize = 28.sp)
+                }
+                // Small corner emoji chip
+                Box(
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(3.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xDD000000))
+                        .padding(3.dp)
+                ) {
+                    Text(playlist.icon, fontSize = 11.sp)
+                }
             }
 
             Spacer(Modifier.width(14.dp))
@@ -303,7 +429,7 @@ private fun PlaylistCard(playlist: Playlist, onClick: () -> Unit, onPlayAll: () 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         playlist.title,
-                        style = T.Name.copy(color = C.ink, fontSize = 16.sp, fontWeight = FontWeight.Bold),
+                        style = T.Name.copy(color = C.ink, fontSize = 15.sp, fontWeight = FontWeight.Bold),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -369,6 +495,7 @@ private fun PlaylistDetailView(playlist: Playlist, onBack: () -> Unit, acts: Act
             }
 
             // Playlist Header Card
+            val plCover = rememberAssetBitmap(playlist.coverPath)
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -382,22 +509,47 @@ private fun PlaylistDetailView(playlist: Playlist, onBack: () -> Unit, acts: Act
                         )
                     )
                     .border(1.dp, Color(playlist.colorHex), Sh.Lg)
-                    .padding(18.dp),
+                    .padding(16.dp),
             ) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(playlist.icon, fontSize = 36.sp, modifier = Modifier.padding(end = 12.dp))
+                        Box(
+                            Modifier
+                                .size(88.dp)
+                                .clip(Sh.Md)
+                                .border(1.5.dp, Color(playlist.colorHex), Sh.Md)
+                                .shadow(8.dp, Sh.Md)
+                                .background(Color(0xFF200E17)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (plCover != null) {
+                                Image(
+                                    bitmap = plCover,
+                                    contentDescription = playlist.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else {
+                                Text(playlist.icon, fontSize = 36.sp)
+                            }
+                        }
+                        Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f)) {
                             Text(playlist.badge, style = T.Eyebrow.copy(color = C.warm, fontSize = 11.sp))
                             Text(
                                 playlist.title,
-                                style = T.Title.copy(color = C.ink, fontSize = 22.sp, fontWeight = FontWeight.Bold),
+                                style = T.Title.copy(color = C.ink, fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                            )
+                            Text(
+                                "${playlist.songs.size} canciones dedicadas",
+                                style = T.Eyebrow.copy(color = C.dim, fontSize = 11.sp),
+                                modifier = Modifier.padding(top = 2.dp)
                             )
                         }
                     }
                     Text(
                         playlist.description,
-                        style = T.Body.copy(color = C.paperInk.copy(alpha = 0.85f), fontSize = 13.sp),
+                        style = T.Body.copy(color = C.paperInk.copy(alpha = 0.85f), fontSize = 12.5.sp),
                         modifier = Modifier.padding(top = 10.dp),
                     )
 
@@ -521,9 +673,9 @@ fun SongRow(
             // Album Cover Thumbnail with animated equalizer overlay
             Box(
                 Modifier
-                    .size(46.dp)
+                    .size(54.dp)
                     .clip(Sh.Sm)
-                    .border(1.dp, if (isSelected) C.red else Color(0x33F7EFE2), Sh.Sm)
+                    .border(1.2.dp, if (isSelected) C.red else Color(0x33F7EFE2), Sh.Sm)
                     .background(Color(0xFF200E17)),
                 contentAlignment = Alignment.Center,
             ) {

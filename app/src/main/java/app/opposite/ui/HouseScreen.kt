@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -75,18 +78,18 @@ fun Header(evening: Evening, settings: Settings, acts: Acts) {
         Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 6.dp),
-        verticalAlignment = Alignment.Bottom
+            .padding(start = 16.dp, end = 8.dp, top = 32.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text("Nuestro Refugio", style = T.Title.copy(color = C.ink, fontSize = 22.sp))
+            Text("Nuestro Refugio", style = T.Title.copy(color = C.ink, fontSize = 20.sp))
             Text(
                 liveDuration.formattedSummary,
                 style = T.Eyebrow.copy(color = C.raspberry, fontSize = 11.sp, letterSpacing = 0.05.sp, fontWeight = FontWeight.Bold),
             )
             Text(
                 liveDuration.subtitle,
-                style = T.Muted.copy(color = C.dim, fontSize = 10.sp),
+                style = T.Muted.copy(color = C.dim, fontSize = 9.5.sp),
             )
         }
 
@@ -101,12 +104,12 @@ fun Header(evening: Evening, settings: Settings, acts: Acts) {
                     acts.store.toggleMusic()
                     acts.toast(if (active) "Música suave de fondo activada 🍃🎶" else "Música silenciada")
                 }
-                .padding(6.dp)
+                .padding(8.dp)
         )
 
         Spacer(Modifier.width(4.dp))
         Text("${s.litCount} de ${Season.DAYS}", style = T.Count.copy(color = C.warm), modifier = Modifier.padding(end = 4.dp))
-        Text("⚙", style = T.Title.copy(color = C.dim), modifier = Modifier.clip(Sh.Sm).clickable { acts.open(Overlay.Settings) }.padding(6.dp))
+        Text("⚙", style = T.Title.copy(color = C.dim, fontSize = 20.sp), modifier = Modifier.clip(Sh.Sm).clickable { acts.open(Overlay.Settings) }.padding(8.dp))
     }
 }
 
@@ -121,44 +124,118 @@ fun HouseScreen(evening: Evening, settings: Settings, acts: Acts, igniting: Int,
     var snowmanToggle by remember { mutableStateOf(false) }
     var showCreatorMirror by remember { mutableStateOf(false) }
 
-    Column(Modifier.verticalScroll(rememberScrollState())) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
+    ) {
         Header(evening, settings, acts)
 
         AppUpdateBanner()
 
         Box {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val atmosphere by app.opposite.data.location.LocationTimeProvider.currentAtmosphere.collectAsState()
+            var activeBubble by remember { mutableStateOf<app.opposite.ui.ambient.ActiveBubble?>(null) }
+            val carProgress = (time * 0.08f) % 1.0f
+            val carX = 390f - (carProgress * 440f)
+
+            LaunchedEffect(activeBubble) {
+                if (activeBubble != null) {
+                    kotlinx.coroutines.delay(8500L)
+                    activeBubble = null
+                }
+            }
+
+            // Fachada viva del edificio con cielo procedural integrado, entidades animadas y ventanas
             Picture(
                 HOUSE_W,
                 HOUSE_H,
+                onDoubleTap = { x, y ->
+                    val target = sceneryHit(x, y, carX)
+                    if (target == SceneryTarget.MOON || (x > 240f && y < 90f)) {
+                        showCreatorMirror = true
+                        acts.toast("👑 Panel Espejo de Elvis abierto")
+                    }
+                },
                 onTap = { x, y ->
                     val hitWindow = facadeHit(x, y)
                     if (hitWindow != null) {
                         tapWindow(hitWindow, evening, acts, ru)
                     } else {
-                        when (sceneryHit(x, y)) {
+                        val target = sceneryHit(x, y, carX)
+                        when (target) {
                             SceneryTarget.MOON -> {
                                 moonTaps++
-                                if (moonTaps >= 7) {
+                                if (moonTaps >= 5) {
                                     moonTaps = 0
                                     showCreatorMirror = true
                                 } else {
-                                    acts.toast("Tú eres mi Luna favorita, Principessa 🌙")
+                                    val (spk, msg) = app.opposite.data.messages.AmbientMessagesRepository.getMessageForEntity(
+                                        context, "luna", atmosphere.isDayTime, atmosphere.isSunset
+                                    )
+                                    activeBubble = app.opposite.ui.ambient.ActiveBubble(spk, msg)
                                 }
                             }
+                            SceneryTarget.RATA_ASPIRABLE -> {
+                                val (spk, msg) = app.opposite.data.messages.AmbientMessagesRepository.getMessageForEntity(
+                                    context, "rata", atmosphere.isDayTime, atmosphere.isSunset
+                                )
+                                activeBubble = app.opposite.ui.ambient.ActiveBubble(spk, msg)
+                            }
+                            SceneryTarget.PAREJA -> {
+                                val (spk, msg) = app.opposite.data.messages.AmbientMessagesRepository.getMessageForEntity(
+                                    context, "pareja", atmosphere.isDayTime, atmosphere.isSunset
+                                )
+                                activeBubble = app.opposite.ui.ambient.ActiveBubble(spk, msg)
+                            }
+                            SceneryTarget.CAR -> {
+                                val (spk, msg) = app.opposite.data.messages.AmbientMessagesRepository.getMessageForEntity(
+                                    context, "coche", atmosphere.isDayTime, atmosphere.isSunset
+                                )
+                                activeBubble = app.opposite.ui.ambient.ActiveBubble(spk, msg)
+                            }
+                            SceneryTarget.CAT -> {
+                                val (spk, msg) = app.opposite.data.messages.AmbientMessagesRepository.getMessageForEntity(
+                                    context, "gatito", atmosphere.isDayTime, atmosphere.isSunset
+                                )
+                                activeBubble = app.opposite.ui.ambient.ActiveBubble(spk, msg)
+                            }
                             SceneryTarget.STARS -> {
-                                acts.toast("Un deseo bajo las estrellas para nosotros ✨")
+                                val (spk, msg) = app.opposite.data.messages.AmbientMessagesRepository.getMessageForEntity(
+                                    context, "estrellas", atmosphere.isDayTime, atmosphere.isSunset
+                                )
+                                activeBubble = app.opposite.ui.ambient.ActiveBubble(spk, msg)
                             }
                             SceneryTarget.SNOWMAN -> {
                                 snowmanToggle = !snowmanToggle
-                                acts.toast(if (snowmanToggle) "Modo rata activado 🐀✨" else "El Sol manda saludos ☀️")
+                                val (spk, msg) = app.opposite.data.messages.AmbientMessagesRepository.getMessageForEntity(
+                                    context, "muñeco", atmosphere.isDayTime, atmosphere.isSunset
+                                )
+                                activeBubble = app.opposite.ui.ambient.ActiveBubble(spk, msg)
                             }
                             SceneryTarget.STREETLIGHT -> {
-                                acts.toast("Luz dorada para alumbrar tu camino, mi niña 💡")
+                                val (spk, msg) = app.opposite.data.messages.AmbientMessagesRepository.getMessageForEntity(
+                                    context, "farola", atmosphere.isDayTime, atmosphere.isSunset
+                                )
+                                activeBubble = app.opposite.ui.ambient.ActiveBubble(spk, msg)
                             }
                             SceneryTarget.DOOR -> {
-                                acts.toast("Toc, toc... Solo se abre una ventana por noche, Mio Principessa 🚪❤️")
+                                val (spk, msg) = app.opposite.data.messages.AmbientMessagesRepository.getMessageForEntity(
+                                    context, "corona", atmosphere.isDayTime, atmosphere.isSunset
+                                )
+                                activeBubble = app.opposite.ui.ambient.ActiveBubble(spk, msg)
                             }
-                            null -> {}
+                            SceneryTarget.PINE -> {
+                                val (spk, msg) = app.opposite.data.messages.AmbientMessagesRepository.getMessageForEntity(
+                                    context, "pino", atmosphere.isDayTime, atmosphere.isSunset
+                                )
+                                activeBubble = app.opposite.ui.ambient.ActiveBubble(spk, msg)
+                            }
+                            null -> {
+                                activeBubble = null
+                            }
                         }
                     }
                 }
@@ -172,6 +249,9 @@ fun HouseScreen(evening: Evening, settings: Settings, acts: Acts, igniting: Int,
                         igniting = igniting,
                         ignite = ignite,
                         numbers = numbers,
+                        atmosphere = atmosphere,
+                        bubble = activeBubble,
+                        carProgress = carProgress
                     )
                 )
             }
